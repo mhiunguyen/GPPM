@@ -8,7 +8,11 @@ import json
 
 from .database import get_db
 from .models import AnalysisRecord
+<<<<<<< HEAD
 from .schemas import AnalyzeResult, SymptomValidationRequest, SymptomValidationResult
+=======
+from .schemas import AnalyzeResult
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 
 AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://localhost:8001")
 ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "*")
@@ -75,6 +79,7 @@ async def analyze(
         print(f"Failed to log analysis: {e}")
     
     return JSONResponse(result)
+<<<<<<< HEAD
 
 
 @app.post("/api/v1/validate-symptoms", response_model=SymptomValidationResult, tags=["symptoms"])
@@ -99,3 +104,5 @@ async def validate_symptoms(request: SymptomValidationRequest):
         result = r.json()
     
     return JSONResponse(result)
+=======
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4

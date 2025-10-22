@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { useState } from 'react';
+=======
+import { useState, useEffect } from 'react';
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 import { useTranslation } from 'react-i18next';
 // import './DisclaimerModal.css';
 
@@ -10,9 +14,22 @@ function DisclaimerModal({ onAccept }: DisclaimerModalProps) {
   const [accepted, setAccepted] = useState(false);
   const { t } = useTranslation();
 
+<<<<<<< HEAD
   const handleAccept = () => {
     if (accepted) {
       console.log('DisclaimerModal: User clicked accept');
+=======
+  useEffect(() => {
+    // Check if user already accepted
+    const hasAccepted = localStorage.getItem('dermasafe_disclaimer_accepted');
+    if (hasAccepted === 'true') {
+      onAccept();
+    }
+  }, [onAccept]);
+
+  const handleAccept = () => {
+    if (accepted) {
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
       localStorage.setItem('dermasafe_disclaimer_accepted', 'true');
       onAccept();
     }

@@ -67,6 +67,9 @@ i18n
     },
   });
 
+<<<<<<< HEAD
 console.log('i18n initialized with language:', i18n.language);
 
+=======
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 export default i18n;

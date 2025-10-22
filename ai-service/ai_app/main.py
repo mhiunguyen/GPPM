@@ -19,9 +19,14 @@ import importlib
 # we'll fall back to a lightweight stub implementation below.
 
 
+<<<<<<< HEAD
 from .schemas import AnalyzeResult, Symptoms, DiseaseInfo, SymptomValidationRequest, SymptomValidationResult
 from .logic.rules import decide_risk
 from .logic.symptom_validator import validate_and_extract_symptoms
+=======
+from .schemas import AnalyzeResult, Symptoms, DiseaseInfo
+from .logic.rules import decide_risk
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 
 app = FastAPI(title="DermaSafe-AI Service", version="0.3.0")
 
@@ -156,6 +161,7 @@ async def analyze(
         result.recommendations = derm_result.recommendations
     
     return result
+<<<<<<< HEAD
 
 
 @app.post("/validate-symptoms", response_model=SymptomValidationResult)
@@ -179,3 +185,5 @@ async def validate_symptoms(request: SymptomValidationRequest):
     )
     
     return SymptomValidationResult(**result)
+=======
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 services:
   postgres:
     image: postgres:16-alpine
@@ -43,3 +44,77 @@ services:
 
 volumes:
   pg_data:
+=======
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: dermasafe
+      POSTGRES_USER: dermasafe_user
+      POSTGRES_PASSWORD: dermasafe_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dermasafe_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: ./ai-service/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./ai-service:/app/ai-service
+      - ./dermatology_module:/app/dermatology_module
+      - ai_models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend-api:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://dermasafe_user:dermasafe_pass@postgres:5432/dermasafe
+      - AI_SERVICE_URL=http://ai-service:8001
+    depends_on:
+      - postgres
+      - ai-service
+    volumes:
+      - ./backend-api:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend-api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  ai_models:
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4

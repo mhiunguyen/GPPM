@@ -37,6 +37,7 @@ venv/
 .envrc
 .mypy_cache/
 
+<<<<<<< HEAD
 # Python build artifacts
 *.egg-info/
 **/*.egg-info/
@@ -51,6 +52,8 @@ frontend/.vite/
 # Additional caches
 .parcel-cache/
 
+=======
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 # Editor/IDE
 .vscode/
 .idea/

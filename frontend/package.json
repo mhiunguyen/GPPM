@@ -15,7 +15,10 @@
   "dependencies": {
     "@types/react-i18next": "^8.1.0",
     "i18next": "^25.6.0",
+<<<<<<< HEAD
     "lucide-react": "^0.546.0",
+=======
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-i18next": "^16.1.0"
@@ -23,6 +26,10 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@playwright/test": "^1.56.1",
+<<<<<<< HEAD
+=======
+    "@tailwindcss/postcss": "^4.1.14",
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
@@ -33,7 +40,11 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
+<<<<<<< HEAD
     "tailwindcss": "^3.4.1",
+=======
+    "tailwindcss": "^4.1.14",
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^5.4.11"

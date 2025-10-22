@@ -3,6 +3,10 @@ uvicorn[standard]==0.30.6
 pydantic==2.9.2
 httpx==0.27.2
 psycopg[binary]==3.2.3
+<<<<<<< HEAD
+=======
+psycopg2-binary==2.9.9
+>>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
 sqlalchemy==2.0.36
 python-multipart==0.0.12
 alembic==1.13.2

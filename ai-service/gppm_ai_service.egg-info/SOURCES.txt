@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+ai_app/__init__.py
+ai_app/main.py
+ai_app/model.py
+ai_app/schemas.py
+ai_app/logic/rules.py
+gppm_ai_service.egg-info/PKG-INFO
+gppm_ai_service.egg-info/SOURCES.txt
+gppm_ai_service.egg-info/dependency_links.txt
+gppm_ai_service.egg-info/top_level.txt
+tests/test_analyze.py
+tests/test_analyze_json.py
+tests/test_health.py
+tests/test_rules.py
+training/export_onnx.py
+training/train.py
