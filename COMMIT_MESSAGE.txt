@@ -1,0 +1,19 @@
+feat(symptoms): add Symptom Validation API + frontend integration
+
+- AI Service: add /validate-symptoms endpoint
+  - Logic: ai_app/logic/symptom_validator.py (47+ keywords, invalid input handling)
+  - Schemas: SymptomValidationRequest, SymptomValidationResult
+- Backend API: add /api/v1/validate-symptoms proxy endpoint
+- Frontend: integrate free-text symptom validation in DermaSafeAI
+  - Async validation with loading state and colored messages (✅/❌/⚠️)
+  - Auto-add normalized symptom tags on success
+- Docs: add API usage and testing guides
+  - docs/SYMPTOM_VALIDATION_API.md
+  - FRONTEND_SYMPTOM_VALIDATION.md
+  - TESTING_GUIDE.md
+  - COMPLETE_INTEGRATION_SUMMARY.md
+
+Notes:
+- No diagnosis or prescriptions; gentle advice only
+- Handles invalid inputs like "Đẹp trai", "Mèo cắn em", "Buồn quá"
+- Bilingual support (vi/en); English input normalizes to Vietnamese symptom tags
