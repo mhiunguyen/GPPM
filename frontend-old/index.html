@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DermaSafe-AI</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+      .card { max-width: 720px; margin: 0 auto; padding: 1.5rem; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+      .row { display: flex; gap: 1rem; align-items: center; }
+      label { font-weight: 600; }
+      textarea { width: 100%; }
+      .result { margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>DermaSafe-AI (MVP)</h1>
+      <p>Đây là bản giao diện tối giản để thử luồng tải ảnh + chọn triệu chứng và gọi API backend.</p>
+
+      <form id="form">
+        <div class="row">
+          <label>Ảnh da:</label>
+          <input type="file" id="image" name="image" accept="image/*" required />
+        </div>
+        <div style="margin-top: .75rem;">
+          <label>Triệu chứng (chọn, phân cách bằng dấu phẩy):</label>
+          <input type="text" id="symptoms_selected" placeholder="ngứa, chảy máu" style="width:100%" />
+        </div>
+        <div style="margin-top: .75rem;">
+          <label>Thời gian:</label>
+          <select id="duration">
+            <option value="">-- chọn --</option>
+            <option>< 1 tuần</option>
+            <option>1-2 tuần</option>
+            <option>> 2 tuần</option>
+          </select>
+        </div>
+        <button type="submit" style="margin-top: 1rem;">Analyze</button>
+      </form>
+      <div id="result" class="result" hidden></div>
+
+      <p style="margin-top:1rem; font-size: .9rem; color:#555;">
+        Lưu ý: Công cụ chỉ SÀNG LỌC RỦI RO, không phải chẩn đoán y tế. Hãy tham vấn bác sĩ da liễu.
+      </p>
+    </div>
+
+    <script>
+      const form = document.getElementById('form');
+      const resultDiv = document.getElementById('result');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData();
+        const image = document.getElementById('image').files[0];
+        const symptoms = document.getElementById('symptoms_selected').value;
+        const duration = document.getElementById('duration').value;
+        fd.append('image', image);
+        if (symptoms) fd.append('symptoms_selected', symptoms);
+        if (duration) fd.append('duration', duration);
+        resultDiv.hidden = false; resultDiv.textContent = 'Đang phân tích...';
+        try {
+          const res = await fetch('/api/v1/analyze', { method: 'POST', body: fd });
+          if (!res.ok) throw new Error('Backend error');
+          const data = await res.json();
+          resultDiv.textContent = `${data.risk} — ${data.reason}`;
+        } catch (err) {
+          resultDiv.textContent = 'Có lỗi khi gọi API.';
+        }
+      });
+    </script>
+  </body>
+</html>

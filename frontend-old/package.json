@@ -1,0 +1,12 @@
+{
+  "name": "dermasafe-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "eslint .",
+    "test": "echo 'No tests yet'"
+  },
+  "devDependencies": {
+    "eslint": "9.11.1"
+  }
+}

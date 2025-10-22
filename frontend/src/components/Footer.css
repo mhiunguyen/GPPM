@@ -1,0 +1,48 @@
+.app-footer {
+  margin-top: 4rem;
+  background: #263238;
+  color: #b0bec5;
+  padding: 2rem 1rem;
+}
+
+.footer-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.footer-disclaimer {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #37474f;
+}
+
+.footer-disclaimer h4 {
+  color: #ffc107;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
+
+.footer-disclaimer p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.footer-info {
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.footer-info p {
+  margin: 0;
+}
+
+.footer-info a {
+  color: #64b5f6;
+  text-decoration: none;
+  margin: 0 0.5rem;
+}
+
+.footer-info a:hover {
+  text-decoration: underline;
+}
