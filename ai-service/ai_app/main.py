@@ -21,8 +21,13 @@ import importlib
 
 from .schemas import AnalyzeResult, Symptoms, DiseaseInfo
 from .logic.rules import decide_risk, adjust_scores
+from .capture import capture_service
+from .routes import router as capture_router
 
 app = FastAPI(title="DermaSafe-AI Service", version="0.3.0")
+
+# Mount capture routes
+app.include_router(capture_router)
 
 # Khởi tạo DermatologyAnalyzer (thử import bằng importlib để tránh import-time errors)
 DERMATOLOGY_ANALYZER = None
@@ -62,12 +67,22 @@ async def analyze(
     symptoms_json: Optional[str] = Form(None),
     symptoms_selected: Optional[str] = Form(None),
     duration: Optional[str] = Form(None),
+    enhance: Optional[bool] = Form(False),  # New: enable smart capture enhancement
 ):
     # Đọc ảnh
     image_bytes = await image.read()
     
+    # Smart capture enhancement (if enabled and available)
+    quality_report = None
+    if enhance and capture_service.is_available():
+        try:
+            image_bytes, quality_report = capture_service.process(image_bytes, auto_crop=False)
+            print(f"✅ Image enhanced. Quality improved by {quality_report.get('improvement', 0):.1f} points")
+        except Exception as e:
+            print(f"⚠️ Enhancement failed: {e}. Using original image.")
+    
     # Phân tích bằng DermatologyAnalyzer
-    derm_result: Optional[DermAnalysisResult] = None
+    derm_result = None  # type: ignore
     cv_scores: Dict[str, float] = {}
     
     if DERMATOLOGY_ANALYZER is not None:

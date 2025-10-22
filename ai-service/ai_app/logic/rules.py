@@ -297,7 +297,7 @@ def decide_risk(cv_scores: Dict[str, float], selected_symptoms: Iterable[str]) -
             advice = "Theo dõi thêm. Nếu có thay đổi hoặc khó chịu, nên đi khám da liễu."
         
         return (
-            "THẤP �",
+            "THẤP 🟢",
             f"Hình ảnh phù hợp với {top_disease_viet} ({top_score:.1%}), thường là tình trạng lành tính. {advice}"
         )
     else:

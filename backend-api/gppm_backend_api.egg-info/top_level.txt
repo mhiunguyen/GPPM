@@ -1,3 +1,0 @@
-alembic
-backend_app
-tests

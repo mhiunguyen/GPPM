@@ -1,6 +1,27 @@
-torch>=2.0.0
+# ============================================
+# Smart Derma Capture Module Dependencies
+# ============================================
+
+# Deep Learning Framework
+torch>=2.0.0,<3.0.0
 torchvision>=0.15.0
+
+# OpenCLIP - Vision-Language Models
 open-clip-torch>=2.20.0
-Pillow>=9.0.0
+
+# Image Processing
+Pillow>=11.0.0
 opencv-python>=4.5.0
+
+# Scientific Computing
 numpy>=1.21.0
+
+# Image Quality Assessment
+scikit-image>=0.24.0
+
+# ============================================
+# Optional: GPU Acceleration
+# ============================================
+# For NVIDIA GPU with CUDA 12.1:
+# torch==2.2.0+cu121
+# torchvision==0.17.0+cu121
