@@ -25,7 +25,6 @@ class AnalyzeResult(BaseModel):
     description: Optional[str] = Field(default=None, description="Mô tả tổng quan")
     overall_severity: Optional[str] = Field(default=None, description="Mức độ nghiêm trọng tổng thể")
     recommendations: Optional[List[str]] = Field(default=None, description="Khuyến nghị hành động")
-<<<<<<< HEAD
 
 
 class SymptomValidationRequest(BaseModel):
@@ -39,5 +38,4 @@ class SymptomValidationResult(BaseModel):
     valid: bool = Field(description="Mô tả có phải là triệu chứng hợp lệ không")
     symptoms: List[str] = Field(default_factory=list, description="Danh sách triệu chứng được trích xuất")
     response: str = Field(description="Câu trả lời tư vấn nhẹ nhàng")
-=======
->>>>>>> 9491d7e6213a5e25ee6fdc2936818618a3dc64a4
+

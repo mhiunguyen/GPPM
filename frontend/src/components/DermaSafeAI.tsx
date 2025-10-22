@@ -451,21 +451,42 @@ export default function DermaSafeAI() {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center cursor-pointer py-4 sm:py-6">
+                  <div className="flex flex-col items-center py-4 sm:py-6">
                     <Upload className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mb-3" />
-                    <span className="text-sm sm:text-base text-gray-600 mb-2 text-center px-4">
-                      {language === 'vi' ? 'Kéo thả ảnh hoặc nhấn để chọn' : 'Drag & drop or click to select'}
+                    <span className="text-sm sm:text-base text-gray-600 mb-4 text-center px-4">
+                      {language === 'vi' ? 'Chọn ảnh từ thư viện hoặc chụp ảnh trực tiếp' : 'Select from gallery or take a photo'}
                     </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <button type="button" className="mt-3 px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hover:shadow-lg">
-                      {t('selectImage')}
-                    </button>
-                  </label>
+                    
+                    {/* Two buttons: Gallery and Camera */}
+                    <div className="flex flex-col sm:flex-row gap-3 w-full px-4">
+                      {/* Gallery Button */}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                        <div className="w-full px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hover:shadow-lg text-center">
+                          🖼️ {language === 'vi' ? 'Chọn ảnh' : 'Choose Image'}
+                        </div>
+                      </label>
+                      
+                      {/* Camera Button - capture attribute forces camera on mobile */}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                        <div className="w-full px-5 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-all hover:shadow-lg text-center">
+                          📸 {language === 'vi' ? 'Chụp ảnh' : 'Take Photo'}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
