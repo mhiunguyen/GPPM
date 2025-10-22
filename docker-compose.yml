@@ -47,11 +47,28 @@ services:
     environment:
       - DATABASE_URL=postgresql://dermasafe_user:dermasafe_pass@postgres:5432/dermasafe
       - AI_SERVICE_URL=http://ai-service:8001
+      - CHATBOT_SERVICE_URL=http://chatbot:8002
     depends_on:
       - postgres
       - ai-service
     volumes:
       - ./backend-api:/app
+
+  chatbot:
+    build:
+      context: ./chatbot-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ALLOW_ORIGINS=http://localhost:5173,http://localhost:3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
