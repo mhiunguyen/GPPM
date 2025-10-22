@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional, Dict
+from typing import List, Literal, Optional, Dict, Any
 
 
 Duration = Literal["< 1 tuần", "1-2 tuần", "> 2 tuần"]
@@ -33,3 +33,6 @@ class AnalyzeResult(BaseModel):
     description: Optional[str] = Field(default=None, description="Mô tả tổng quan")
     overall_severity: Optional[str] = Field(default=None, description="Mức độ nghiêm trọng tổng thể")
     recommendations: Optional[List[str]] = Field(default=None, description="Khuyến nghị hành động")
+
+    # Giải thích (tùy chọn): cách mô hình quyết định
+    explanations: Optional[Dict[str, Any]] = Field(default=None, description="Giải thích kèm bằng chứng hình ảnh/triệu chứng")

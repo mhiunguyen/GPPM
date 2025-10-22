@@ -13,7 +13,8 @@ from .disease_database import (
     get_disease_info, 
     get_severity_from_disease,
     COMMON_DISEASES,
-    PAD_DISEASES
+    PAD_DISEASES,
+    EXTENDED_DISEASES,
 )
 
 
@@ -62,13 +63,13 @@ class DermatologyAnalyzer:
         
         # Tải tokenizer
         self.tokenizer = open_clip.get_tokenizer(model_name)
-        
-        # Danh sách bệnh
-        self.disease_list = disease_list or PAD_DISEASES
-        
+
+        # Danh sách bệnh: mặc định dùng mở rộng để tăng độ phủ
+        self.disease_list = disease_list or EXTENDED_DISEASES
+
         # Chuẩn bị text features cho các bệnh
         self._prepare_text_features()
-        
+
         logger.info("Khởi tạo thành công!")
     
     def _prepare_text_features(self):

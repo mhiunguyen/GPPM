@@ -20,7 +20,7 @@ import importlib
 
 
 from .schemas import AnalyzeResult, Symptoms, DiseaseInfo
-from .logic.rules import decide_risk
+from .logic.rules import decide_risk, adjust_scores
 
 app = FastAPI(title="DermaSafe-AI Service", version="0.3.0")
 
@@ -76,7 +76,7 @@ async def analyze(
             pil_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
             
             # Phân tích
-            derm_result = DERMATOLOGY_ANALYZER.analyze(pil_image, top_k=5)
+            derm_result = DERMATOLOGY_ANALYZER.analyze(pil_image, top_k=7)
             
             # Tạo cv_scores từ kết quả phân tích
             cv_scores[derm_result.primary_disease.name] = derm_result.primary_disease.confidence
@@ -116,14 +116,27 @@ async def analyze(
             selected = [s.strip() for s in symptoms_selected.split(",") if s.strip()]
         symptoms_model = Symptoms(symptoms_selected=selected, duration=duration)  # type: ignore[arg-type]
 
-    # Quyết định mức độ rủi ro dựa trên cv_scores và triệu chứng
-    risk, reason = decide_risk(cv_scores, symptoms_model.symptoms_selected)
+    # Điều chỉnh điểm theo triệu chứng và quyết định mức độ rủi ro
+    adjusted_scores, adj_expl = adjust_scores(cv_scores, symptoms_model.symptoms_selected)
+    risk, reason = decide_risk(adjusted_scores, symptoms_model.symptoms_selected)
     
     # Tạo response
     result = AnalyzeResult(
         risk=risk,
         reason=reason,
-        cv_scores=cv_scores
+        cv_scores=adjusted_scores,
+        explanations={
+            "image_evidence": cv_scores,
+            "symptom_evidence": {
+                "selected": symptoms_model.symptoms_selected,
+                "duration": symptoms_model.duration,
+            },
+            "adjustments": adj_expl.get("adjustments", []),
+            "final_decision": {
+                "risk": risk,
+                "reason": reason,
+            },
+        }
     )
     
     # Thêm thông tin chi tiết từ DermatologyAnalyzer nếu có

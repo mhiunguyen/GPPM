@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-Module `dermatology_module` đã được tích hợp thành công vào GPPM để phân tích ảnh da liễu bằng AI model **DermLIP** (Vision-Language Model). Module này sử dụng zero-shot learning với CLIP architecture để phân loại 44+ loại bệnh da liễu.
+Module `dermatology_module` đã được tích hợp thành công vào GPPM để phân tích ảnh da liễu bằng AI model **DermLIP** (Vision-Language Model). Module này sử dụng zero-shot learning với CLIP architecture. Cấu hình mặc định hiện tại nhận diện 23 loại bệnh (EXTENDED_DISEASES) cân bằng giữa độ phủ và hiệu năng CPU.
 
 ---
 
@@ -91,7 +91,7 @@ pip install -r requirements.txt
 
 ---
 
-### 3. Schema Extensions
+### 3. Schema Extensions (kèm Explainability)
 
 **File: `ai-service/ai_app/schemas.py`**
 
@@ -124,13 +124,14 @@ class AnalyzeResult(BaseModel):
     description: Optional[str]                   # Mô tả tổng quan
     overall_severity: Optional[str]              # Mức độ nghiêm trọng tổng thể
     recommendations: Optional[List[str]]         # Khuyến nghị hành động
+    explanations: Optional[Dict[str, Any]]       # Giải thích (điểm ảnh, điều chỉnh triệu chứng, quyết định cuối)
 ```
 
 **backend-api/backend_app/schemas.py** - Same structure (duplicated for independence)
 
 ---
 
-### 4. AI Service Integration
+### 4. AI Service Integration (Symptom-aware)
 
 **File: `ai-service/ai_app/main.py`**
 
@@ -150,7 +151,7 @@ try:
     import importlib
     analyzer_module = importlib.import_module("dermatology_module.analyzer")
     DermatologyAnalyzer = analyzer_module.DermatologyAnalyzer
-    analyzer = DermatologyAnalyzer()
+    analyzer = DermatologyAnalyzer()  # mặc định dùng EXTENDED_DISEASES (23 bệnh)
     ANALYZER_STATUS = "active"
 except Exception as e:
     print(f"⚠️ DermatologyAnalyzer not available: {e}")
@@ -171,7 +172,7 @@ async def health_check():
     }
 ```
 
-#### c) Analyze Endpoint
+#### c) Analyze Endpoint (có điều chỉnh theo triệu chứng)
 
 ```python
 @app.post("/analyze", response_model=AnalyzeResult)
@@ -188,7 +189,7 @@ async def analyze(
     
     # 2. Use DermatologyAnalyzer if available
     if analyzer:
-        derm_result = analyzer.analyze(pil_image)
+        derm_result = analyzer.analyze(pil_image, top_k=7)
         
         # Map to AnalyzeResult
         cv_scores = {pred.name: pred.confidence 
@@ -223,25 +224,34 @@ async def analyze(
     
     # 3. Apply rules engine
     from ai_app.logic.rules import decide_risk
-    risk, reason = decide_risk(cv_scores, symptoms_selected, duration)
+    # Điều chỉnh điểm theo triệu chứng trước khi quyết định
+    from ai_app.logic.rules import adjust_scores
+    adjusted_scores, adj_expl = adjust_scores(cv_scores, symptoms_selected.split(",") if symptoms_selected else [])
+    risk, reason = decide_risk(adjusted_scores, symptoms_selected.split(",") if symptoms_selected else [])
     
     # 4. Return result
     return AnalyzeResult(
         risk=risk,
         reason=reason,
-        cv_scores=cv_scores,
+    cv_scores=adjusted_scores,
         primary_disease=primary_disease,
         alternative_diseases=alternative_diseases,
         clinical_concepts=derm_result.clinical_concepts if analyzer else [],
         description=derm_result.description if analyzer else "",
         overall_severity=derm_result.overall_severity if analyzer else "",
-        recommendations=derm_result.recommendations if analyzer else []
+        recommendations=derm_result.recommendations if analyzer else [],
+        explanations={
+            "image_evidence": cv_scores,
+            "symptom_evidence": {"selected": symptoms_selected.split(",") if symptoms_selected else [], "duration": duration},
+            "adjustments": adj_expl.get("adjustments", []),
+            "final_decision": {"risk": risk, "reason": reason}
+        }
     )
 ```
 
 ---
 
-### 5. Enhanced Rules Engine
+### 5. Enhanced Rules Engine (điều chỉnh theo triệu chứng)
 
 **File: `ai-service/ai_app/logic/rules.py`**
 
@@ -307,7 +317,7 @@ INFLAMMATION_SYMPTOMS = {
 }
 ```
 
-**e) 7-Level Priority System**:
+**e) Symptom hints + 7-Level Priority System**:
 ```python
 def decide_risk(cv_scores: Dict[str, float],
                 symptoms_selected: str,
@@ -492,7 +502,7 @@ docker-compose up --build
 
 ---
 
-## 📊 DermLIP Model Details
+## 📊 DermLIP Model Details & Supported Diseases
 
 ### Architecture
 - **Base Model**: CLIP ViT-B/16
@@ -500,61 +510,11 @@ docker-compose up --build
 - **Task**: Zero-shot classification
 - **Output**: 44 disease classes
 
-### Supported Diseases (44 total)
+### Supported Diseases (23 default)
 
-**Cancers (7)**:
-- Melanoma
-- Basal Cell Carcinoma
-- Squamous Cell Carcinoma
-- Actinic Keratosis
-- Merkel Cell Carcinoma
-- Cutaneous T-cell Lymphoma
-- Kaposi Sarcoma
-
-**Inflammatory (15)**:
-- Eczema / Atopic Dermatitis
-- Psoriasis
-- Contact Dermatitis
-- Seborrheic Dermatitis
-- Rosacea
-- Acne
-- Folliculitis
-- Cellulitis
-- Impetigo
-- Erysipelas
-- Urticaria (Hives)
-- Angioedema
-- Drug Eruption
-- Erythema Multiforme
-- Stevens-Johnson Syndrome
-
-**Benign Growths (10)**:
-- Nevus (Mole)
-- Seborrheic Keratosis
-- Skin Tag
-- Lipoma
-- Dermatofibroma
-- Hemangioma
-- Cherry Angioma
-- Pyogenic Granuloma
-- Keloid
-- Wart
-
-**Infections (8)**:
-- Fungal (Tinea)
-- Candidiasis
-- Herpes Simplex
-- Herpes Zoster (Shingles)
-- Molluscum Contagiosum
-- Scabies
-- Lice
-- Bacterial Infection
-
-**Others (4)**:
-- Vitiligo
-- Alopecia Areata
-- Lichen Planus
-- Pityriasis Rosea
+- Ung thư/tiền ung thư: melanoma, basal cell carcinoma, squamous cell carcinoma, actinic keratosis
+- Lành tính/khối u nhỏ: seborrheic keratosis, nevus, wart, dermatofibroma, lipoma, cherry angioma, skin tag, milia
+- Viêm/nhiễm/miễn dịch: eczema, psoriasis, dermatitis, acne, rosacea, urticaria, tinea, vitiligo, impetigo, cellulitis, folliculitis
 
 ### Performance
 - **Accuracy**: ~85% on Derm1M test set

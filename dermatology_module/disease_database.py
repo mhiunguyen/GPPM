@@ -140,6 +140,139 @@ DISEASE_DATABASE = {
     }
 }
 
+# BỔ SUNG: Một số bệnh da phổ biến khác (mở rộng phạm vi nhận diện)
+DISEASE_DATABASE.update({
+    # Viêm/mụn
+    "acne": {
+        "vietnamese": "Mụn trứng cá",
+        "severity": Severity.MILD,
+        "description": "Tình trạng tắc nghẽn nang lông và tuyến bã gây mụn đầu trắng/đen, mụn viêm.",
+        "recommendations": [
+            "Giữ vệ sinh da sạch, tránh cọ xát mạnh",
+            "Sử dụng sản phẩm chứa BHA/AHA hoặc benzoyl peroxide nhẹ",
+            "Không tự nặn mụn để tránh sẹo và nhiễm trùng",
+            "Khám da liễu nếu mụn viêm nặng hoặc kéo dài"
+        ]
+    },
+    "rosacea": {
+        "vietnamese": "Chứng đỏ mặt (Rosacea)",
+        "severity": Severity.MODERATE,
+        "description": "Tình trạng đỏ mặt, giãn mạch, có thể kèm mụn mủ ở vùng trung tâm mặt.",
+        "recommendations": [
+            "Tránh nắng, nóng, đồ cay/ẩm thực kích thích",
+            "Dùng kem chống nắng phổ rộng hằng ngày",
+            "Khám da liễu để cân nhắc thuốc bôi/thuốc uống",
+            "Tránh sản phẩm chăm sóc da gây kích ứng"
+        ]
+    },
+    "urticaria": {
+        "vietnamese": "Mày đay",
+        "severity": Severity.MILD,
+        "description": "Mẩn đỏ, nổi mề đay, ngứa, thường do dị ứng hoặc kích ứng tạm thời.",
+        "recommendations": [
+            "Tránh tác nhân nghi ngờ (thực phẩm/thuốc/môi trường)",
+            "Có thể dùng kháng histamine không kê đơn",
+            "Đi khám nếu sưng môi/lưỡi/khó thở hoặc kéo dài > 48 giờ"
+        ]
+    },
+    "tinea": {
+        "vietnamese": "Nấm da",
+        "severity": Severity.MILD,
+        "description": "Nhiễm nấm nông gây mảng đỏ, rìa rõ, ngứa; có thể ở da thân, bẹn, chân.",
+        "recommendations": [
+            "Giữ da khô thoáng, tránh ẩm ướt kéo dài",
+            "Dùng thuốc chống nấm bôi (theo hướng dẫn)",
+            "Khám bác sĩ nếu lan rộng hoặc không cải thiện sau 2 tuần"
+        ]
+    },
+    "vitiligo": {
+        "vietnamese": "Bạch biến",
+        "severity": Severity.MODERATE,
+        "description": "Mất sắc tố khu trú/lan tỏa gây mảng trắng trên da do rối loạn miễn dịch.",
+        "recommendations": [
+            "Tránh nắng, dùng kem chống nắng SPF 50+",
+            "Tham khảo bác sĩ về liệu pháp bôi/ánh sáng",
+            "Theo dõi tiến triển và yếu tố khởi phát"
+        ]
+    },
+    "impetigo": {
+        "vietnamese": "Chốc lở",
+        "severity": Severity.MILD,
+        "description": "Nhiễm khuẩn nông dễ lây, tạo vảy mật ong; thường gặp ở trẻ em.",
+        "recommendations": [
+            "Giữ vệ sinh, tránh gãi để không lan rộng",
+            "Tham khảo bác sĩ về kháng sinh bôi/uống",
+            "Tránh dùng chung đồ dùng cá nhân"
+        ]
+    },
+    "cellulitis": {
+        "vietnamese": "Viêm mô tế bào",
+        "severity": Severity.SEVERE,
+        "description": "Nhiễm trùng da/mô dưới da, đỏ, nóng, đau, có thể sốt; cần điều trị sớm.",
+        "recommendations": [
+            "Đi khám sớm để được đánh giá và dùng kháng sinh",
+            "Nâng cao vùng bị ảnh hưởng, theo dõi dấu hiệu nặng",
+            "Không tự chích/xử lý mủ tại nhà"
+        ]
+    },
+    "folliculitis": {
+        "vietnamese": "Viêm nang lông",
+        "severity": Severity.MILD,
+        "description": "Viêm lỗ chân lông do vi khuẩn/nấm/kích ứng, gây sẩn đỏ/mụn mủ quanh lông.",
+        "recommendations": [
+            "Giữ vùng da sạch và khô",
+            "Tránh cạo sát/kỳ cọ mạnh",
+            "Cân nhắc sát khuẩn nhẹ hoặc thuốc bôi theo chỉ định"
+        ]
+    },
+    "dermatofibroma": {
+        "vietnamese": "U xơ sợi da",
+        "severity": Severity.BENIGN,
+        "description": "Nốt cứng nhỏ, lành tính, thường ở chân; lõm xuống khi bóp hai bên (dấu hiệu dimple).",
+        "recommendations": [
+            "Thường không cần điều trị",
+            "Có thể loại bỏ nếu gây thẩm mỹ hoặc kích ứng",
+            "Theo dõi nếu có thay đổi nhanh"
+        ]
+    },
+    "lipoma": {
+        "vietnamese": "U mỡ",
+        "severity": Severity.BENIGN,
+        "description": "Khối u mỡ mềm, di động, lành tính dưới da; phát triển chậm.",
+        "recommendations": [
+            "Không cần điều trị trừ khi đau hoặc thẩm mỹ",
+            "Tham khảo bác sĩ nếu lớn nhanh hoặc đau"
+        ]
+    },
+    "cherry angioma": {
+        "vietnamese": "U máu anh đào",
+        "severity": Severity.BENIGN,
+        "description": "Chấm đỏ tươi nhỏ do tăng sinh mạch máu, rất phổ biến và lành tính.",
+        "recommendations": [
+            "Không cần điều trị",
+            "Có thể đốt laser nếu thẩm mỹ"
+        ]
+    },
+    "skin tag": {
+        "vietnamese": "Mụn thịt (u mềm treo)",
+        "severity": Severity.BENIGN,
+        "description": "Nhú mềm nhỏ, lành tính, thường ở vùng ma sát như cổ, nách.",
+        "recommendations": [
+            "An toàn khi loại bỏ tại cơ sở y tế",
+            "Tránh tự cắt/buộc tại nhà"
+        ]
+    },
+    "milia": {
+        "vietnamese": "Hạt kê",
+        "severity": Severity.BENIGN,
+        "description": "Nang sừng nhỏ màu trắng, lành tính, thường quanh mắt/ má.",
+        "recommendations": [
+            "Thường tự hết; tránh nặn",
+            "Có thể lấy nhân tại cơ sở y tế nếu cần"
+        ]
+    }
+})
+
 
 def get_disease_info(disease_name: str) -> dict:
     """
@@ -191,4 +324,24 @@ PAD_DISEASES = [
     "seborrheic keratosis",
     "squamous cell carcinoma",
     "melanoma"
+]
+
+# Danh sách mở rộng kết hợp phổ biến + bệnh bổ sung (ưu tiên phạm vi rộng)
+EXTENDED_DISEASES = [
+    # Tập phổ biến
+    *COMMON_DISEASES,
+    # Bổ sung
+    "acne",
+    "rosacea",
+    "urticaria",
+    "tinea",
+    "vitiligo",
+    "impetigo",
+    "cellulitis",
+    "folliculitis",
+    "dermatofibroma",
+    "lipoma",
+    "cherry angioma",
+    "skin tag",
+    "milia",
 ]

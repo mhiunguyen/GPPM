@@ -6,9 +6,11 @@ Service này sử dụng **DermLIP AI model** thông qua `dermatology_module` đ
 
 - 🔍 Phân tích ảnh da liễu bằng DermLIP (state-of-the-art)
 - 🇻🇳 Hỗ trợ tiếng Việt đầy đủ
-- 📊 Cung cấp chẩn đoán chính + các chẩn đoán thay thế
-- 💡 Khuyến nghị hành động cụ thể
+- 📊 Chẩn đoán chính + chẩn đoán thay thế (top-k)
+- 💡 Khuyến nghị hành động cụ thể theo từng bệnh
 - 🎯 Đánh giá mức độ nghiêm trọng
+- 🧩 Ảnh hưởng bởi triệu chứng người dùng (symptom-aware scoring)
+- 🔎 Giải thích vì sao (explanations: điểm từ ảnh, điều chỉnh theo triệu chứng, quyết định cuối)
 
 ## 🏗️ Kiến trúc
 
@@ -68,38 +70,49 @@ Kiểm tra trạng thái service
 
 Phân tích ảnh da liễu
 
-**Request:**
-- `image`: File ảnh (multipart/form-data)
-- `symptoms_selected`: CSV triệu chứng (optional)
-- `symptoms_json`: JSON structured symptoms (optional)
-- `duration`: Thời gian triệu chứng (optional)
+**Request:** multipart/form-data
+- `image`: File ảnh (bắt buộc)
+- `symptoms_selected`: CSV triệu chứng (tùy chọn), ví dụ: `"ngứa, thay đổi"`
+- `symptoms_json`: JSON có cấu trúc (tùy chọn), ví dụ: `{"symptoms_selected":["ngứa","thay đổi"],"duration":"1-2 tuần"}`
+- `duration`: Thời gian triệu chứng (tùy chọn) — để tương thích cũ
 
-**Response:**
+**Response:** (rút gọn)
 ```json
 {
-  "risk": "cao",
-  "reason": "Phát hiện tổn thương có khả năng là ung thư da",
-  "cv_scores": {
-    "melanoma": 0.72,
-    "nevus": 0.15
+  "risk": "TRUNG BÌNH 🟡",
+  "reason": "Có triệu chứng ngứa nhưng hình ảnh chưa rõ ràng...",
+  "cv_scores": {           
+    "impetigo": 0.1864,
+    "eczema": 0.1289,
+    "melanoma": 0.0896,
+    "...": 0.0
   },
   "primary_disease": {
-    "name": "melanoma",
-    "vietnamese_name": "Ung thư hắc tố",
-    "confidence": 0.72,
-    "severity": "rất nghiêm trọng",
-    "description": "Ung thư da nghiêm trọng nhất...",
-    "recommendations": ["⚠️ ĐI KHÁM NGAY LẬP TỨC"]
+    "name": "impetigo",
+    "vietnamese_name": "Chốc lở",
+    "confidence": 0.1864,
+    "severity": "nhẹ",
+    "description": "Nhiễm khuẩn nông dễ lây...",
+    "recommendations": ["Giữ vệ sinh...", "Kháng sinh bôi/uống (theo bác sĩ)"]
   },
   "alternative_diseases": [...],
-  "clinical_concepts": ["ung thư", "cần sinh thiết"],
+  "clinical_concepts": [],
   "description": "Dựa trên phân tích ảnh...",
-  "overall_severity": "rất nghiêm trọng",
-  "recommendations": [...]
+  "overall_severity": "nhẹ",
+  "recommendations": ["..."],
+  "explanations": {
+    "image_evidence": {"impetigo": 0.1864, "eczema": 0.1031, "...": 0.0},
+    "symptom_evidence": {"selected": ["ngứa", "thay đổi"], "duration": "1-2 tuần"},
+    "adjustments": [
+      {"symptom": "ngứa", "disease": "eczema", "factor": 1.25, "before": 0.1031, "after": 0.1289},
+      {"symptom": "thay đổi", "disease": "melanoma", "factor": 1.25, "before": 0.0717, "after": 0.0896}
+    ],
+    "final_decision": {"risk": "TRUNG BÌNH 🟡", "reason": "..."}
+  }
 }
 ```
 
-## 🧠 Models
+## 🧠 Models & Danh sách bệnh hỗ trợ
 
 ### DermLIP ViT-B/16 (Default)
 - Model: `hf-hub:redlessone/DermLIP_ViT-B-16`
@@ -113,12 +126,22 @@ Phân tích ảnh da liễu
 - Speed: Slower
 - Accuracy: Better
 
-Để chuyển model, cập nhật `app/main.py`:
+Để chuyển model, cập nhật `ai_app/main.py`:
 ```python
 DERMATOLOGY_ANALYZER = DermatologyAnalyzer(
     model_name="hf-hub:redlessone/DermLIP_PanDerm-base-w-PubMed-256"
 )
 ```
+
+### Danh sách bệnh nhận diện (mặc định)
+
+Mặc định AI sử dụng bộ mở rộng (EXTENDED_DISEASES) gồm 23 bệnh sau:
+
+- Ung thư/tiền ung thư: melanoma, basal cell carcinoma, squamous cell carcinoma, actinic keratosis
+- Lành tính/khối u nhỏ: seborrheic keratosis, nevus, wart, dermatofibroma, lipoma, cherry angioma, skin tag, milia
+- Viêm/nhiễm/miễn dịch: eczema, psoriasis, dermatitis, acne, rosacea, urticaria, tinea, vitiligo, impetigo, cellulitis, folliculitis
+
+Bạn có thể truyền danh sách tùy chỉnh khi khởi tạo `DermatologyAnalyzer(disease_list=[...])`.
 
 ## 🔧 Configuration
 

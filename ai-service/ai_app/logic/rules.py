@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, List, Any
 
 
 SEVERE_FLAGS = {"chảy máu", "lan rộng rất nhanh", "đau nhức dữ dội"}
@@ -30,6 +30,79 @@ CHANGE_SYMPTOMS = {"mới xuất hiện", "thay đổi màu sắc", "thay đổi
 
 # Triệu chứng viêm nhiễm
 INFLAMMATION_SYMPTOMS = {"ngứa", "đau", "sưng", "nóng rát"}
+
+# Ánh xạ triệu chứng -> gợi ý bệnh (trọng số điều chỉnh)
+# Giá trị >1.0 sẽ tăng điểm, <1.0 sẽ giảm điểm một chút
+SYMPTOM_HINTS: Dict[str, Dict[str, float]] = {
+    # nghi ngờ ác tính / thay đổi
+    "thay đổi": {"melanoma": 1.25, "basal cell carcinoma": 1.15, "squamous cell carcinoma": 1.15},
+    "mới xuất hiện": {"melanoma": 1.15},
+    "lan rộng": {"melanoma": 1.15, "squamous cell carcinoma": 1.1},
+    "chảy máu": {"melanoma": 1.2, "basal cell carcinoma": 1.1},
+
+    # viêm/ ngứa rát
+    "ngứa": {"eczema": 1.25, "dermatitis": 1.2, "psoriasis": 1.1, "urticaria": 1.15, "tinea": 1.05},
+    "đau": {"cellulitis": 1.2, "folliculitis": 1.15, "basal cell carcinoma": 1.05},
+    "sưng": {"cellulitis": 1.25, "folliculitis": 1.15},
+    "nóng rát": {"rosacea": 1.15, "dermatitis": 1.1},
+
+    # đặc thù
+    "trắng bệch": {"vitiligo": 1.3},
+    "mủ": {"impetigo": 1.25, "folliculitis": 1.2, "acne": 1.1},
+    "vảy": {"psoriasis": 1.25, "actinic keratosis": 1.1},
+    "mụn": {"acne": 1.3},
+    "đỏ bừng mặt": {"rosacea": 1.3},
+    "mụn cóc": {"wart": 1.4},
+}
+
+
+def adjust_scores(cv_scores: Dict[str, float], selected_symptoms: Iterable[str]) -> Tuple[Dict[str, float], Dict[str, Any]]:
+    """Điều chỉnh điểm mô hình dựa trên triệu chứng và trả về log giải thích.
+
+    Trả về: (điểm_điều_chỉnh, giải_thích)
+    """
+    sel = [s.strip().lower() for s in selected_symptoms if s and s.strip()]
+    if not sel or not cv_scores:
+        return cv_scores, {"adjustments": [], "note": "no symptom-driven adjustment"}
+
+    adjusted = dict(cv_scores)
+    adjustments: List[Dict[str, Any]] = []
+
+    for s in sel:
+        hints = SYMPTOM_HINTS.get(s)
+        if not hints:
+            # thử khớp theo từ khóa con
+            for key, mapping in SYMPTOM_HINTS.items():
+                if key in s:
+                    hints = mapping
+                    break
+        if not hints:
+            continue
+
+        for disease, factor in hints.items():
+            # chỉ điều chỉnh nếu bệnh có trong cv_scores hoặc là ứng viên gần (thêm nhẹ)
+            base = adjusted.get(disease, 0.0)
+            new_score = base * factor if base > 0 else base + 0.01 * (factor - 1.0)
+            # kẹp về [0,1]
+            new_score = max(0.0, min(1.0, new_score))
+            if abs(new_score - base) > 1e-6:
+                adjusted[disease] = new_score
+                adjustments.append({
+                    "symptom": s,
+                    "disease": disease,
+                    "factor": factor,
+                    "before": round(base, 6),
+                    "after": round(new_score, 6),
+                })
+
+    # chuẩn hóa lại tổng không bắt buộc, nhưng giữ cấu trúc bằng cách scale nhẹ nếu tổng vượt >1
+    total = sum(adjusted.values())
+    if total > 0 and total != sum(cv_scores.values()):
+        # không cần scale tuyệt đối; để preserve ranking tương đối
+        pass
+
+    explanation = {"adjustments": adjustments}
+    return adjusted, explanation
 
 
 def get_disease_vietnamese_name(disease_name: str) -> str:
