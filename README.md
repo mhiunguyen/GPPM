@@ -2,29 +2,17 @@
 
 
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
-
-[![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://reactjs.org/)> **DermaSafe-AI**: Hệ thống hỗ trợ sàng lọc nguy cơ bệnh da liễu bằng AI![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/TEN_CUA_BAN/derma-safe-ai/ci.yml)
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com/)
-
-![License](https://img.shields.io/github/license/TEN_CUA_BAN/derma-safe-ai)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)[![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://reactjs.org/)> **DermaSafe-AI**: Hệ thống hỗ trợ sàng lọc nguy cơ bệnh da liễu bằng AI![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/mhiunguyen/GPPM/.github/workflows/ci-frontend.yml)[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com/)![License](https://img.shields.io/github/license/mhiunguyen/GPPM)[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
 > **DermaSafe AI**: Ứng dụng web sử dụng Deep Learning (DermLIP model) để phân tích hình ảnh da và đưa ra đánh giá nguy cơ ban đầu, giúp người dùng quyết định có nên đi khám bác sĩ da liễu hay không.
 
-Ứng dụng web sử dụng Deep Learning (DermLIP model) để phân tích hình ảnh da và đưa ra đánh giá nguy cơ ban đầu, giúp người dùng quyết định có nên đi khám bác sĩ da liễu hay không.![Issues](https://img.shields.io/github/issues/TEN_CUA_BAN/derma-safe-ai)
-
-![DermaSafe AI Demo](docs/images/demo.png)
+Ứng dụng web sử dụng Deep Learning (DermLIP model) để phân tích hình ảnh da và đưa ra đánh giá nguy cơ ban đầu, giúp người dùng quyết định có nên đi khám bác sĩ da liễu hay không.
 
 
 
 ---
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)**Một công cụ sàng lọc rủi ro da liễu nguồn mở, dựa trên AI, ưu tiên sự an toàn và minh bạch.**
-
-## ⚠️ CẢNH BÁO Y TẾ QUAN TRỌNG
+**Một công cụ sàng lọc rủi ro da liễu nguồn mở, dựa trên AI, ưu tiên sự an toàn và minh bạch.**
 # 🏥 DermaSafe AI (GPPM)
 
 Open-source dermatology risk screening system. Upload a skin image, select symptoms, and get a triage-oriented risk level (High/Medium/Low) with clear explanations. Built with FastAPI, React, and a DermLIP-based analyzer.
