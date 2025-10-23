@@ -13,6 +13,10 @@ interface ChatBotProps {
     confidence?: number;
     risk_level?: string;
     symptoms?: string[];
+    duration?: string;
+    description?: string;
+    recommendations?: any;
+    alternative_diagnoses?: any[];
   } | null;
   language?: string;
   mode?: 'floating' | 'inline';
@@ -26,13 +30,20 @@ export default function ChatBot({ analysisContext, language = 'vi', mode = 'floa
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [hasAutoExplained, setHasAutoExplained] = useState(false);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll if messages exist to avoid initial page scroll
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Only auto-scroll when new messages are added (not on initial mount)
+    if (messages.length > 1) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -48,6 +59,103 @@ export default function ChatBot({ analysisContext, language = 'vi', mode = 'floa
       setMessages([welcomeMessage]);
     }
   }, [isOpen, messages.length, language]);
+
+  // Reset hasAutoExplained when analysisContext changes (new diagnosis)
+  useEffect(() => {
+    if (analysisContext?.primary_diagnosis) {
+      setHasAutoExplained(false);
+    }
+  }, [analysisContext?.primary_diagnosis]);
+
+  // Auto-explain analysis results when available
+  useEffect(() => {
+    // Only auto-explain once when analysis context becomes available
+    if (analysisContext && 
+        analysisContext.primary_diagnosis && 
+        !hasAutoExplained) {
+      
+      setHasAutoExplained(true);
+      
+      // Create auto-explanation prompt
+      const autoPrompt = language === 'vi' 
+        ? `Hãy giải thích chi tiết kết quả chuẩn đoán này cho tôi. Bệnh là gì? Mức độ nghiêm trọng? Tôi nên làm gì?`
+        : `Please explain this diagnosis result in detail. What is the condition? How serious is it? What should I do?`;
+      
+      // Add the auto-question as user message
+      const autoQuestion: Message = {
+        role: 'user',
+        content: autoPrompt,
+        timestamp: Date.now()
+      };
+      
+      setMessages(prev => [...prev, autoQuestion]);
+      setLoading(true);
+
+      // Auto-send to get explanation
+      const fetchExplanation = async () => {
+        try {
+          // Format analysis context with full details
+          const formattedContext = {
+            risk: analysisContext.risk_level || 'UNKNOWN',
+            reason: `Chẩn đoán: ${analysisContext.primary_diagnosis}`,
+            cv_scores: {},
+            primary_disease: {
+              name: analysisContext.primary_diagnosis,
+              confidence: analysisContext.confidence || 0,
+              description: analysisContext.description || ''
+            },
+            alternative_diseases: analysisContext.alternative_diagnoses || [],
+            recommendations: analysisContext.recommendations || [],
+            clinical_concepts: analysisContext.symptoms || [],
+            duration: analysisContext.duration
+          };
+
+          const response = await fetch('/api/v1/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: sessionId,
+              message: autoPrompt,
+              analysis_context: formattedContext,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: data.message,
+            timestamp: Date.now()
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        } catch (error) {
+          console.error('Auto-explanation error:', error);
+          
+          // Fallback explanation if API fails
+          const fallbackMessage: Message = {
+            role: 'assistant',
+            content: language === 'vi'
+              ? `📋 **Kết quả chuẩn đoán:**\n\n🔍 Chẩn đoán: ${analysisContext.primary_diagnosis}\n📊 Độ tin cậy: ${Math.round((analysisContext.confidence || 0) * 100)}%\n⚠️ Mức độ nguy cơ: ${analysisContext.risk_level}\n\n${analysisContext.symptoms && analysisContext.symptoms.length > 0 ? `🩺 Triệu chứng: ${analysisContext.symptoms.join(', ')}\n\n` : ''}💡 Đây là kết quả phân tích AI để tham khảo. Bạn nên tham khảo ý kiến bác sĩ da liễu để có chẩn đoán chính xác và phương án điều trị phù hợp.`
+              : `📋 **Diagnosis Result:**\n\n🔍 Diagnosis: ${analysisContext.primary_diagnosis}\n📊 Confidence: ${Math.round((analysisContext.confidence || 0) * 100)}%\n⚠️ Risk Level: ${analysisContext.risk_level}\n\n${analysisContext.symptoms && analysisContext.symptoms.length > 0 ? `🩺 Symptoms: ${analysisContext.symptoms.join(', ')}\n\n` : ''}💡 This is an AI analysis for reference. Please consult a dermatologist for accurate diagnosis and treatment.`,
+            timestamp: Date.now()
+          };
+          
+          setMessages(prev => [...prev, fallbackMessage]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchExplanation();
+    }
+  }, [analysisContext, hasAutoExplained, language, sessionId]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || loading) return;
@@ -72,11 +180,13 @@ export default function ChatBot({ analysisContext, language = 'vi', mode = 'floa
           cv_scores: {},
           primary_disease: analysisContext.primary_diagnosis ? {
             name: analysisContext.primary_diagnosis,
-            confidence: analysisContext.confidence || 0
+            confidence: analysisContext.confidence || 0,
+            description: analysisContext.description || ''
           } : null,
-          alternative_diseases: [],
-          recommendations: [],
-          clinical_concepts: analysisContext.symptoms || []
+          alternative_diseases: analysisContext.alternative_diagnoses || [],
+          recommendations: analysisContext.recommendations || [],
+          clinical_concepts: analysisContext.symptoms || [],
+          duration: analysisContext.duration
         };
       }
 

@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Image as ImageIcon,
   Upload,
@@ -17,6 +18,13 @@ import {
 } from 'lucide-react';
 import CameraCapture from './CameraCapture';
 import ChatBot from './ChatBot';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import FloatCallButton from './FloatCallButton';
+import BugReportButton from './BugReportButton';
+import ProjectInfoButton from './ProjectInfoButton';
 
 // Types
 type LangKey = 'vi' | 'en';
@@ -38,12 +46,23 @@ export default function DermaSafeModern() {
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [customSymptoms, setCustomSymptoms] = useState<string[]>([]);
   const [customSymptomInput, setCustomSymptomInput] = useState('');
+  const [customValidating, setCustomValidating] = useState(false);
+  const [customValidationMsg, setCustomValidationMsg] = useState<string | null>(null);
   const [duration, setDuration] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ main: true });
+  const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
+
+  // Load consent from localStorage
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('dermasafe_consent_v1');
+      if (v === '1') setConsentAccepted(true);
+    } catch {}
+  }, []);
 
   // Categories (more than 9 symptoms)
   const categories: SymptomCategory[] = [
@@ -122,9 +141,10 @@ export default function DermaSafeModern() {
 
   const durationOptions = [
     { value: 'less_week', vi: 'Dưới 1 tuần', en: 'Less than 1 week' },
-    { value: 'week_month', vi: '1 tuần - 1 tháng', en: '1 week - 1 month' },
-    { value: 'month_6month', vi: '1-6 tháng', en: '1-6 months' },
-    { value: 'more_6month', vi: 'Hơn 6 tháng', en: 'More than 6 months' }
+    { value: '1_4_weeks', vi: '1-4 tuần', en: '1-4 weeks' },
+    { value: '1_3_months', vi: '1-3 tháng', en: '1-3 months' },
+    { value: 'over_3_months', vi: 'Trên 3 tháng', en: 'Over 3 months' },
+    { value: 'since_birth', vi: 'Từ khi sinh ra', en: 'Since birth' }
   ];
 
   // Derived list for search
@@ -156,6 +176,14 @@ export default function DermaSafeModern() {
       selected: { vi: 'đã chọn', en: 'selected' },
       clearAll: { vi: 'Xóa tất cả', en: 'Clear all' },
       selectDuration: { vi: 'Chọn thời gian', en: 'Select duration' },
+      consentLabel: {
+        vi: 'Tôi hiểu và đồng ý: Kết quả chỉ mang tính tham khảo, không thay thế chẩn đoán hay điều trị y khoa chính thức.',
+        en: 'I understand and agree: Results are informational only and do not replace professional medical diagnosis or treatment.'
+      },
+      consentRequired: {
+        vi: 'Bạn cần xác nhận đồng ý tuyên bố miễn trừ trách nhiệm trước khi phân tích.',
+        en: 'You must accept the disclaimer before analyzing.'
+      },
       analyzeBtn: { vi: 'Phân tích nguy cơ', en: 'Analyze risk' },
       analyzing: { vi: 'Đang phân tích…', en: 'Analyzing…' },
       results: { vi: 'Kết quả sàng lọc', en: 'Screening Results' },
@@ -198,9 +226,10 @@ export default function DermaSafeModern() {
   };
 
   const removeSymptom = (id: string) => setSymptoms(prev => prev.filter(s => s !== id));
-  const addCustomSymptom = () => {
+  const addCustomSymptom = async () => {
     const v = customSymptomInput.trim();
     if (!v) return;
+    setCustomValidationMsg(null);
     
     // Validate: length between 2-100 chars, no special characters except spaces, hyphens, commas
     if (v.length < 2 || v.length > 100) {
@@ -211,9 +240,45 @@ export default function DermaSafeModern() {
       alert(language === 'vi' ? '⚠️ Triệu chứng chỉ được chứa chữ, số, dấu cách và dấu gạch ngang' : '⚠️ Symptom can only contain letters, numbers, spaces and hyphens');
       return;
     }
-    
-    if (!customSymptoms.includes(v)) setCustomSymptoms(prev => [...prev, v]);
-    setCustomSymptomInput('');
+    // Remote validation via backend (Gemini) to ensure it's a real dermatology symptom
+    setCustomValidating(true);
+    try {
+      const res = await fetch('/api/v1/validate-symptoms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: v, language })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data && data.valid === false) {
+        // Block adding and show message
+        const msg = data.response || (language === 'vi' ? '❌ Mô tả này không phải là triệu chứng da liễu hợp lệ.' : '❌ This does not look like a valid dermatology symptom.');
+        setCustomValidationMsg(msg);
+        setCustomValidating(false);
+        return;
+      }
+      // If API suggests normalized symptoms, prefer them
+      let toAdd: string[] = [];
+      if (Array.isArray(data?.symptoms) && data.symptoms.length > 0) {
+        // Deduplicate and trim
+        toAdd = Array.from(new Set<string>(data.symptoms.map((s: string) => (s || '').toString().trim()).filter(Boolean)));
+      } else {
+        toAdd = [v];
+      }
+      // Apply additions if not already present
+      setCustomSymptoms(prev => {
+        const merged = new Set(prev);
+        toAdd.forEach(s => merged.add(s));
+        return Array.from(merged);
+      });
+      setCustomSymptomInput('');
+      setCustomValidationMsg(language === 'vi' ? '✅ Đã thêm triệu chứng hợp lệ' : '✅ Valid symptom added');
+    } catch (err: any) {
+      // In case of API failure, be conservative: do not add, but inform user
+      setCustomValidationMsg((language === 'vi' ? '⚠️ Không thể kiểm tra: ' : '⚠️ Could not validate: ') + (err?.message || 'Unknown error'));
+    } finally {
+      setCustomValidating(false);
+    }
   };
   const removeCustomSymptom = (name: string) => setCustomSymptoms(prev => prev.filter(s => s !== name));
 
@@ -227,10 +292,11 @@ export default function DermaSafeModern() {
   };
 
   const durationMap: Record<string, string> = {
-    less_week: '< 1 tuần',
-    week_month: '1-2 tuần',
-    month_6month: '> 2 tuần',
-    more_6month: '> 2 tuần'
+    less_week: 'dưới 1 tuần',
+    '1_4_weeks': '1-4 tuần',
+    '1_3_months': '1-3 tháng',
+    over_3_months: 'trên 3 tháng',
+    since_birth: 'từ khi sinh ra'
   };
 
   const getRiskRecommendations = (level: RiskLevel, lang: LangKey) => {
@@ -266,6 +332,10 @@ export default function DermaSafeModern() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedImage) return alert(language === 'vi' ? 'Vui lòng chọn ảnh!' : 'Please select an image!');
+    if (!consentAccepted) {
+      alert(t('consentRequired'));
+      return;
+    }
 
     setLoading(true);
     setResult(null);
@@ -283,6 +353,47 @@ export default function DermaSafeModern() {
       const response = await fetch('/api/v1/analyze', { method: 'POST', body: formData });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
+
+      // Handle detection_status overrides (normal/undetectable)
+      if (data?.detection_status === 'undetectable') {
+        const primaryDiagnosis = {
+          disease: language === 'vi' ? 'Không nhận diện được' : 'Undetectable',
+          confidence: 0,
+          description: data?.detection_message || (language === 'vi' ? 'Không nhận diện được vùng da rõ ràng. Vui lòng chụp lại ảnh.' : 'Could not detect a clear skin region. Please retake the photo.')
+        };
+        const riskLevel: RiskLevel = 'LOW';
+        setResult({
+          success: true,
+          risk_level: riskLevel,
+          primary_diagnosis: primaryDiagnosis,
+          alternative_diagnoses: [],
+          recommendations: getRiskRecommendations(riskLevel, language),
+          detected_symptoms: viSymptoms,
+          detection_status: data.detection_status,
+          detection_message: data.detection_message
+        });
+        return;
+      }
+
+      if (data?.detection_status === 'normal') {
+        const primaryDiagnosis = {
+          disease: language === 'vi' ? 'Da bình thường' : 'Normal skin',
+          confidence: 1,
+          description: data?.detection_message || (language === 'vi' ? 'Không phát hiện tổn thương rõ ràng trên ảnh.' : 'No obvious skin lesion detected in the image.')
+        };
+        const riskLevel: RiskLevel = 'LOW';
+        setResult({
+          success: true,
+          risk_level: riskLevel,
+          primary_diagnosis: primaryDiagnosis,
+          alternative_diagnoses: [],
+          recommendations: getRiskRecommendations(riskLevel, language),
+          detected_symptoms: viSymptoms,
+          detection_status: data.detection_status,
+          detection_message: data.detection_message
+        });
+        return;
+      }
 
       const riskText: string = (data.risk || '').toUpperCase();
       const riskLevel: RiskLevel = riskText.includes('CAO') || riskText.includes('HIGH') ? 'HIGH' : riskText.includes('TRUNG') || riskText.includes('MEDIUM') ? 'MEDIUM' : 'LOW';
@@ -316,7 +427,9 @@ export default function DermaSafeModern() {
         primary_diagnosis: primaryDiagnosis,
         alternative_diagnoses: alternativeDiagnoses,
         recommendations: getRiskRecommendations(riskLevel, language),
-        detected_symptoms: viSymptoms
+        detected_symptoms: viSymptoms,
+        detection_status: data?.detection_status,
+        detection_message: data?.detection_message
       });
     } catch (err: any) {
       alert((language === 'vi' ? 'Lỗi khi phân tích: ' : 'Analysis error: ') + err.message);
@@ -331,21 +444,21 @@ export default function DermaSafeModern() {
         const s = categories.flatMap(c => c.symptoms).find(x => x.id === id);
         if (!s) return null;
         return (
-          <span key={id} className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
+          <Badge key={id} className="gap-2">
             {s[language]}
-            <button type="button" onClick={() => removeSymptom(id)} className="hover:text-blue-900">
+            <button type="button" onClick={() => removeSymptom(id)} className="hover:opacity-80">
               <X className="w-3.5 h-3.5"/>
             </button>
-          </span>
+          </Badge>
         );
       })}
       {customSymptoms.map(name => (
-        <span key={`c-${name}`} className="inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs">
+        <Badge key={`c-${name}`} className="gap-2 bg-purple-100 text-purple-800 hover:bg-purple-100">
           {name}
-          <button type="button" onClick={() => removeCustomSymptom(name)} className="hover:text-purple-900">
+          <button type="button" onClick={() => removeCustomSymptom(name)} className="hover:opacity-80">
             <X className="w-3.5 h-3.5"/>
           </button>
-        </span>
+        </Badge>
       ))}
     </div>
   );
@@ -353,7 +466,7 @@ export default function DermaSafeModern() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header - centered */}
-      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-md border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-md border-b border-gray-200 shadow-sm animate-fade-in-down">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-center relative">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg">
@@ -364,7 +477,7 @@ export default function DermaSafeModern() {
               <p className="text-sm text-gray-600">{t('subtitle')}</p>
             </div>
           </div>
-          <button onClick={() => setLanguage(prev => prev === 'vi' ? 'en' : 'vi')} className="absolute right-6 px-4 py-2 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 shadow-sm">
+          <button onClick={() => setLanguage(prev => prev === 'vi' ? 'en' : 'vi')} className="absolute right-6 px-4 py-2 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200 hover:shadow-md">
             {language === 'vi' ? '🇬🇧 English' : '🇻🇳 Tiếng Việt'}
           </button>
         </div>
@@ -372,116 +485,133 @@ export default function DermaSafeModern() {
 
       <main className="flex-1 max-w-7xl mx-auto px-6 lg:px-8 py-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">{/* Left Column: Upload + Symptoms */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in-up">
             {/* Upload Card */}
-            <div className="bg-white rounded border border-gray-200 shadow-lg p-6 mb-4">
-              <div className="flex items-center gap-2 mb-5">
-                <ImageIcon className="w-6 h-6 text-blue-600"/>
-                <h2 className="text-lg font-semibold text-gray-800">{t('stepUpload')}</h2>
-              </div>
-
-              <div className="border-2 border-dashed border-gray-300 rounded p-6 hover:border-blue-400 transition-colors bg-gradient-to-br from-indigo-50 to-blue-50 mb-4">
-                {previewUrl ? (
-                  <div className="space-y-3">
-                    <img src={previewUrl} alt="Preview" className="w-full h-64 object-cover rounded shadow-md mb-3"/>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedImage(null); setPreviewUrl(null); setResult(null); }}
-                      className="w-full py-3 text-red-600 border-2 border-red-300 hover:bg-red-50 rounded text-sm font-semibold transition-all">
-                      {language === 'vi' ? '❌ Xóa ảnh' : '❌ Remove Image'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <label
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={onDrop}
-                      className="flex flex-col items-center justify-center cursor-pointer py-8"
-                    >
-                      <Upload className="w-16 h-16 text-gray-400 mb-3"/>
-                      <p className="text-sm text-gray-600 text-center mb-4">{t('dragDrop')}</p>
-                      <input type="file" accept="image/*" onChange={onFileChange} className="hidden"/>
-                      <button type="button" className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold shadow-lg">
-                        📁 {t('selectImage')}
-                      </button>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
-                      <div className="relative flex justify-center text-sm"><span className="px-3 bg-gradient-to-br from-indigo-50 to-blue-50 text-gray-600 font-medium">{language === 'vi' ? 'hoặc' : 'or'}</span></div>
+            <Card className="smooth-hover">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-6 h-6 text-primary"/>
+                  {t('stepUpload')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border-2 border-dashed border-input rounded p-6 hover:border-primary transition-colors bg-gradient-to-br from-indigo-50 to-blue-50 mb-4">
+                  {previewUrl ? (
+                    <div className="space-y-3">
+                      <img src={previewUrl} alt="Preview" className="w-full h-64 object-cover rounded shadow-md mb-3"/>
+                      <Button
+                        variant="destructive"
+                        onClick={() => { setSelectedImage(null); setPreviewUrl(null); setResult(null); }}
+                        className="w-full"
+                      >
+                        {language === 'vi' ? '❌ Xóa ảnh' : '❌ Remove Image'}
+                      </Button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setCameraOpen(true)}
-                      className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded hover:from-purple-700 hover:to-indigo-700 text-sm font-semibold flex items-center justify-center gap-2 shadow-lg"
-                    >
-                      <Camera className="w-5 h-5"/> 📸 {t('captureImage')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Duration inline below upload */}
-              <div className="mt-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-5 h-5 text-blue-600"/>
-                  <h3 className="text-base font-semibold text-gray-800">{t('stepDuration')}</h3>
+                  ) : (
+                    <div className="space-y-4">
+                      <label
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={onDrop}
+                        className="flex flex-col items-center justify-center cursor-pointer py-8"
+                      >
+                        <Upload className="w-16 h-16 text-muted-foreground mb-3"/>
+                        <p className="text-sm text-muted-foreground text-center mb-4">{t('dragDrop')}</p>
+                        <input type="file" accept="image/*" onChange={onFileChange} className="hidden"/>
+                        <Button size="lg">
+                          📁 {t('selectImage')}
+                        </Button>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-input"></div></div>
+                        <div className="relative flex justify-center text-sm"><span className="px-3 bg-gradient-to-br from-indigo-50 to-blue-50 text-muted-foreground font-medium">{language === 'vi' ? 'hoặc' : 'or'}</span></div>
+                      </div>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setCameraOpen(true)}
+                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+                      >
+                        <Camera className="w-5 h-5 mr-2"/> {t('captureImage')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className="w-full p-3 border-2 border-gray-300 rounded focus:border-blue-500 focus:outline-none bg-white text-gray-800 text-sm font-medium"
-                >
-                  <option value="" disabled>{t('selectDuration')}</option>
-                  {durationOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt[language]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+
+                {/* Duration inline below upload */}
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-5 h-5 text-primary"/>
+                    <h3 className="text-base font-semibold text-foreground">{t('stepDuration')}</h3>
+                  </div>
+                  <select
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="w-full p-3 border-2 border-input rounded focus:border-primary focus:outline-none bg-background text-foreground text-sm font-medium"
+                  >
+                    <option value="" disabled>{t('selectDuration')}</option>
+                    {durationOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt[language]}</option>
+                    ))}
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Symptoms Card */}
-            <div className="bg-white rounded border border-gray-200 shadow-lg p-6 mt-4">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-6 h-6 text-blue-600"/>
-                  <h2 className="text-lg font-semibold text-gray-800">{t('stepSymptoms')}</h2>
+            <Card className="mt-4 smooth-hover">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-6 h-6 text-primary"/>
+                    {t('stepSymptoms')}
+                  </CardTitle>
+                  {(symptoms.length > 0 || customSymptoms.length > 0) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => { setSymptoms([]); setCustomSymptoms([]); }}
+                    >
+                      🗑️ {t('clearAll')}
+                    </Button>
+                  )}
                 </div>
-                {(symptoms.length > 0 || customSymptoms.length > 0) && (
-                  <button onClick={() => { setSymptoms([]); setCustomSymptoms([]); }} className="px-4 py-2 text-xs text-red-600 border-2 border-red-300 rounded hover:bg-red-50 font-semibold">
-                    🗑️ {t('clearAll')}
-                  </button>
+              </CardHeader>
+              <CardContent>
+                {/* Search */}
+                <div className="relative mb-4">
+                  <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('searchPlaceholder')}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Custom symptom input */}
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    type="text"
+                    value={customSymptomInput}
+                    onChange={(e) => setCustomSymptomInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !customValidating && addCustomSymptom()}
+                    placeholder={language === 'vi' ? '✏️ Nhập triệu chứng khác...' : '✏️ Enter other symptom...'}
+                    className="flex-1 border-purple-300 focus-visible:ring-purple-500"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addCustomSymptom}
+                    disabled={customValidating || !customSymptomInput.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60"
+                  >
+                    {customValidating ? (language === 'vi' ? 'Đang kiểm tra…' : 'Validating…') : (<>➕ {language === 'vi' ? 'Thêm' : 'Add'}</>)}
+                  </Button>
+                </div>
+                {customValidationMsg && (
+                  <div className="mb-4 text-xs font-medium px-3 py-2 rounded border" 
+                       style={{ backgroundColor: customValidationMsg.startsWith('✅') ? '#ecfdf5' : '#fff7ed', color: '#111827', borderColor: customValidationMsg.startsWith('✅') ? '#34d399' : '#f59e0b' }}>
+                    {customValidationMsg}
+                  </div>
                 )}
-              </div>
-
-              {/* Search */}
-              <div className="relative mb-4">
-                <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"/>
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('searchPlaceholder')}
-                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 font-medium"
-                />
-              </div>
-
-              {/* Custom symptom input */}
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={customSymptomInput}
-                  onChange={(e) => setCustomSymptomInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addCustomSymptom()}
-                  placeholder={language === 'vi' ? '✏️ Nhập triệu chứng khác...' : '✏️ Enter other symptom...'}
-                  className="flex-1 px-4 py-3 border-2 border-purple-300 rounded text-sm focus:outline-none focus:border-purple-500 font-medium"
-                />
-                <button
-                  type="button"
-                  onClick={addCustomSymptom}
-                  className="px-5 py-3 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 font-semibold shadow transition-colors"
-                >
-                  ➕ {language === 'vi' ? 'Thêm' : 'Add'}
-                </button>
-              </div>
 
               {/* Selected chips */}
               {(symptoms.length > 0 || customSymptoms.length > 0) && (
@@ -534,20 +664,45 @@ export default function DermaSafeModern() {
               </div>
 
               {/* Analyze button */}
+              {/* Consent checkbox */}
+              <div className="mt-4 p-4 border-2 rounded bg-amber-50 border-amber-300 text-amber-900 text-sm">
+                <div className="text-xs font-bold uppercase tracking-wide mb-2 text-amber-800">
+                  {language === 'vi' ? 'Xác nhận' : 'Consent'}
+                </div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-5 h-5"
+                    checked={consentAccepted}
+                    onChange={(e) => {
+                      const v = e.target.checked; setConsentAccepted(v);
+                      try { localStorage.setItem('dermasafe_consent_v1', v ? '1' : '0'); } catch {}
+                    }}
+                  />
+                  <span className="font-medium">{t('consentLabel')}</span>
+                </label>
+              </div>
+
               <button
                 onClick={handleSubmit}
-                disabled={loading || !selectedImage}
-                className="mt-6 w-full py-4 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-base hover:from-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg transition-all"
+                disabled={loading || !selectedImage || !consentAccepted}
+                className="mt-6 w-full py-4 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-base hover:from-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg transition-all duration-300 hover:shadow-xl active:scale-95"
               >
                 {loading ? '⏳ ' + t('analyzing') : '🔍 ' + t('analyzeBtn')}
               </button>
-            </div>
+              {!consentAccepted && (
+                <div className="mt-2 text-xs text-amber-700">
+                  {t('consentRequired')}
+                </div>
+              )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column: ChatBot + Results */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-slide-in-right">
             {/* Chat inline panel - always visible */}
-            <div className="bg-white rounded border border-gray-200 shadow-lg overflow-hidden">
+            <div className="bg-white rounded border border-gray-200 shadow-lg overflow-hidden smooth-hover">
               <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 flex items-center gap-3">
                 <MessageCircle className="w-6 h-6 text-blue-600"/>
                 <h3 className="text-lg font-bold text-gray-900">{language === 'vi' ? '💬 Trợ lý AI' : '💬 AI Assistant'}</h3>
@@ -555,15 +710,19 @@ export default function DermaSafeModern() {
               <div className="p-0">
                 <ChatBot
                   mode="inline"
-                  analysisContext={{
-                    primary_diagnosis: result?.primary_diagnosis?.disease,
-                    confidence: result?.primary_diagnosis?.confidence,
-                    risk_level: result?.risk_level,
+                  analysisContext={result ? {
+                    primary_diagnosis: result.primary_diagnosis?.disease,
+                    confidence: result.primary_diagnosis?.confidence,
+                    risk_level: result.risk_level,
                     symptoms: [
                       ...symptoms.map(s => (viMap[s] || s)),
                       ...customSymptoms
-                    ]
-                  }}
+                    ],
+                    duration: duration ? durationMap[duration] : undefined,
+                    description: result.primary_diagnosis?.description,
+                    recommendations: result.recommendations,
+                    alternative_diagnoses: result.alternative_diagnoses
+                  } : null}
                   language={language}
                   className="h-[460px]"
                 />
@@ -571,16 +730,16 @@ export default function DermaSafeModern() {
             </div>
 
             {!result ? (
-              <div className="bg-white rounded border border-gray-200 shadow-lg p-10 text-center">
-                <Shield className="w-20 h-20 text-gray-300 mx-auto mb-4"/>
+              <div className="bg-white rounded border border-gray-200 shadow-lg p-10 text-center animate-fade-in">
+                <Shield className="w-20 h-20 text-gray-300 mx-auto mb-4 animate-pulse-once"/>
                 <p className="text-gray-600 text-base font-medium">
                   {language === 'vi' ? '📋 Tải ảnh, chọn triệu chứng để bắt đầu phân tích' : '📋 Upload image and select symptoms to start'}
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 stagger-fade-in">
                 {/* Risk */}
-                <div className={`rounded border-2 ${getRiskColor(result.risk_level)} p-6 shadow-lg`}>
+                <div className={`rounded border-2 ${getRiskColor(result.risk_level)} p-6 shadow-lg animate-scale-in`}>
                   <div className="flex items-start gap-4 justify-center text-center">
                     {getRiskIcon(result.risk_level)}
                     <div className="flex-1">
@@ -605,7 +764,7 @@ export default function DermaSafeModern() {
               </div>
 
               {/* Primary Diagnosis */}
-              <div className="bg-white rounded border border-gray-200 shadow-lg p-5">
+              <div className="bg-white rounded border border-gray-200 shadow-lg p-5 smooth-hover">
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="w-5 h-5 text-blue-600"/>
                   <h3 className="text-base font-semibold text-gray-800">{t('primaryDiag')}</h3>
@@ -629,7 +788,7 @@ export default function DermaSafeModern() {
 
               {/* Alternatives */}
               {result.alternative_diagnoses?.length > 0 && (
-                <div className="bg-white rounded border border-gray-200 shadow-lg p-5">
+                <div className="bg-white rounded border border-gray-200 shadow-lg p-5 smooth-hover">
                   <div className="flex items-center gap-2 mb-3">
                     <Info className="w-5 h-5 text-gray-700"/>
                     <h3 className="text-base font-semibold text-gray-800">{t('altDiag')}</h3>
@@ -665,7 +824,7 @@ export default function DermaSafeModern() {
       {/* Camera Modal */}
       <CameraCapture isOpen={cameraOpen} onCapture={handleCameraCapture} onClose={() => setCameraOpen(false)} />
 
-      {/* Disclaimer */}
+  {/* Disclaimer */}
       <footer className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-gradient-to-r from-red-50 to-amber-50 border-2 border-red-300 rounded p-6 shadow-lg">
           <div className="flex items-start gap-4 justify-center text-center">
@@ -681,6 +840,11 @@ export default function DermaSafeModern() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Buttons */}
+      <FloatCallButton language={language} />
+      <BugReportButton language={language} />
+      <ProjectInfoButton language={language} />
     </div>
   );
 }

@@ -4,8 +4,6 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## React Compiler
 
@@ -71,3 +69,11 @@ export default defineConfig([
   },
 ])
 ```
+
+## Camera capture notes
+
+- The in-app camera supports switching between rear and front cameras on mobile devices.
+- On mobile devices, the camera opens with the front camera by default for easier framing; use the toggle to switch.
+- Use the “Cam trước/Cam sau” button on the capture screen’s top bar to toggle.
+- The preview is mirrored when using the front camera for a natural selfie view. The saved photo is not mirrored.
+- On iOS Safari, if the browser ignores `facingMode`, the app falls back to selecting the correct camera via `enumerateDevices()` after permission is granted.

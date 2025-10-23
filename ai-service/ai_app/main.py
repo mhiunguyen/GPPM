@@ -20,7 +20,7 @@ import importlib
 
 
 from .schemas import AnalyzeResult, Symptoms, DiseaseInfo
-from .logic.rules import decide_risk, adjust_scores
+from .logic.rules import decide_risk, adjust_scores, WARNING_FLAGS, INFLAMMATION_SYMPTOMS, CRITICAL_FLAGS, SEVERE_FLAGS, apply_duration_adjustment
 from .capture import capture_service
 from .routes import router as capture_router
 
@@ -73,6 +73,13 @@ async def analyze(
     image_bytes = await image.read()
     
     # Smart capture enhancement (if enabled and available)
+    # Luôn kiểm tra chất lượng cơ bản (dùng cho nhận diện 'undetectable' hoặc 'normal')
+    quality_basic = None
+    try:
+        quality_basic = capture_service.check_quality(image_bytes)
+    except Exception as e:
+        print(f"⚠️ Basic quality check failed: {e}")
+
     quality_report = None
     if enhance and capture_service.is_available():
         try:
@@ -133,13 +140,56 @@ async def analyze(
 
     # Điều chỉnh điểm theo triệu chứng và quyết định mức độ rủi ro
     adjusted_scores, adj_expl = adjust_scores(cv_scores, symptoms_model.symptoms_selected)
-    risk, reason = decide_risk(adjusted_scores, symptoms_model.symptoms_selected)
+    risk, reason = decide_risk(adjusted_scores, symptoms_model.symptoms_selected, symptoms_model.duration)
+    # Apply additional duration-based adjustment as a safety layer
+    risk, reason = apply_duration_adjustment(risk, reason, symptoms_model.symptoms_selected, symptoms_model.duration)
     
     # Tạo response
+    # Xác định detection_status (normal / undetectable / detected)
+    # Sử dụng heuristic dựa trên chất lượng ảnh, điểm mô hình và triệu chứng đã chọn
+    det_status = "detected"
+    det_message = None
+    try:
+        top_score = 0.0
+        if adjusted_scores:
+            top_score = max(adjusted_scores.values()) if adjusted_scores else 0.0
+        # Lấy điểm chất lượng (chuẩn hóa 0..1)
+        q = None
+        if isinstance(quality_basic, dict):
+            if 'overall_score' in quality_basic and isinstance(quality_basic['overall_score'], (int, float)):
+                q = float(quality_basic['overall_score'])
+            elif 'score' in quality_basic and isinstance(quality_basic['score'], (int, float)):
+                q = float(quality_basic['score']) / 100.0
+        q = 0.0 if q is None else max(0.0, min(1.0, q))
+
+        sel = {s.strip().lower() for s in (symptoms_model.symptoms_selected or []) if s and s.strip()}
+        has_alert_symptom = bool(sel & (CRITICAL_FLAGS | SEVERE_FLAGS | WARNING_FLAGS | INFLAMMATION_SYMPTOMS))
+
+        # Undetectable: chất lượng kém rõ rệt hoặc không có đặc trưng (điểm rất thấp)
+        if (q <= 0.35) or (top_score < 0.05):
+            det_status = "undetectable"
+            det_message = (
+                "Không nhận diện được vùng da rõ ràng. Vui lòng chụp lại với ánh sáng tốt, lấy nét và vùng da chiếm 50-70% khung hình."
+            )
+            risk = "THẤP 🟢"
+            reason = "Ảnh chất lượng thấp hoặc không có đủ đặc trưng để phân tích. " + (det_message or "")
+        # Normal: chất lượng đủ tốt, điểm mô hình thấp, không có triệu chứng đáng lo
+        elif (q >= 0.6) and (top_score < 0.15) and (not has_alert_symptom):
+            det_status = "normal"
+            det_message = "Ảnh cho thấy da có vẻ bình thường, không phát hiện tổn thương rõ ràng."
+            risk = "THẤP 🟢"
+            reason = det_message
+        else:
+            det_status = "detected"
+    except Exception as e:
+        print(f"⚠️ detection_status evaluation failed: {e}")
+
     result = AnalyzeResult(
         risk=risk,
         reason=reason,
         cv_scores=adjusted_scores,
+        detection_status=det_status,
+        detection_message=det_message,
         explanations={
             "image_evidence": cv_scores,
             "symptom_evidence": {
