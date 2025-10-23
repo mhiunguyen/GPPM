@@ -1,0 +1,18 @@
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+You are free to:
+- Share — copy and redistribute the material in any medium or format
+- Adapt — remix, transform, and build upon the material
+
+Under the following terms:
+- Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+- NonCommercial — You may not use the material for commercial purposes.
+- No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+Full license text:
+- Summary: https://creativecommons.org/licenses/by-nc/4.0/
+- Legalcode: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
+Notes:
+- This license applies to the contents of the `dermatology_module/` directory and any derivative works thereof.
+- Model weights used by this module (e.g., DermLIP) are also licensed under CC BY-NC 4.0 by their respective authors; see the project root `THIRD_PARTY_NOTICES.md` for attribution details.

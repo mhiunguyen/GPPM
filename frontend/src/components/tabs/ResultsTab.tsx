@@ -127,24 +127,38 @@ export default function ResultsTab({ language, result, t, getRiskColor, getRiskI
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="font-bold text-blue-900 mb-2">{result.recommendations.action}</div>
-              <div className="text-sm text-blue-800">{result.recommendations.reason}</div>
-            </div>
-            {result.recommendations.steps && (
+            {/* Case A: Server provided an array of detailed recommendations */}
+            {Array.isArray(result.recommendations) ? (
               <div>
-                <div className="font-semibold text-gray-800 mb-2">
-                  {language === 'vi' ? 'Các bước tiếp theo:' : 'Next steps:'}
-                </div>
-                <ul className="space-y-2">
-                  {result.recommendations.steps.map((step: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="text-blue-600 font-bold">{idx + 1}.</span>
-                      <span>{step}</span>
-                    </li>
+                <ul className="space-y-2 list-disc pl-6">
+                  {result.recommendations.map((line: string, idx: number) => (
+                    <li key={idx} className="text-sm text-gray-800 whitespace-pre-line">{line}</li>
                   ))}
                 </ul>
               </div>
+            ) : (
+              // Case B: Fallback to risk-based summary (action/reason/steps)
+              <>
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="font-bold text-blue-900 mb-2">{result.recommendations.action}</div>
+                  <div className="text-sm text-blue-800">{result.recommendations.reason}</div>
+                </div>
+                {result.recommendations.steps && (
+                  <div>
+                    <div className="font-semibold text-gray-800 mb-2">
+                      {language === 'vi' ? 'Các bước tiếp theo:' : 'Next steps:'}
+                    </div>
+                    <ul className="space-y-2">
+                      {result.recommendations.steps.map((step: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="text-blue-600 font-bold">{idx + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

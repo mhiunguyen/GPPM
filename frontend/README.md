@@ -1,74 +1,37 @@
-# React + TypeScript + Vite
+# DermaSafe AI — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + TypeScript UI for the dermatology risk screening app.
 
-Currently, two official plugins are available:
+## Run locally
 
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## API proxy and environment
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+During development, the app calls the Backend API through a Vite proxy using relative paths like /api/v1/analyze.
+
+- Proxy target is configured in vite.config.ts with VITE_BACKEND_URL.
+- Default target: http://localhost:8000
+- In Docker, the compose file sets VITE_BACKEND_URL=http://backend-api:8000
+
+Optional .env for local customizations
 ```
+VITE_BACKEND_URL=http://localhost:8000
+VITE_SUPPORT_PHONE=19001234
+```
+
+## Key endpoints used by the UI
+
+- POST /api/v1/analyze — analyze uploaded image and form data
+- POST /api/v1/validate-symptoms — validate entered symptoms
+- POST /api/v1/chat — chatbot messages (optional service)
+- GET /api/v1/capture/tips — capture guidance
 
 ## Camera capture notes
 
@@ -76,4 +39,4 @@ export default defineConfig([
 - On mobile devices, the camera opens with the front camera by default for easier framing; use the toggle to switch.
 - Use the “Cam trước/Cam sau” button on the capture screen’s top bar to toggle.
 - The preview is mirrored when using the front camera for a natural selfie view. The saved photo is not mirrored.
-- On iOS Safari, if the browser ignores `facingMode`, the app falls back to selecting the correct camera via `enumerateDevices()` after permission is granted.
+- On iOS Safari, if the browser ignores facingMode, the app falls back to selecting the correct camera via enumerateDevices() after permission is granted.

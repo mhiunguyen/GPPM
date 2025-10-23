@@ -267,13 +267,62 @@ class DermatologyAnalyzer:
     def _generate_recommendations(self, disease: DiseaseInfo) -> List[str]:
         """Tạo khuyến nghị tổng thể"""
         recommendations = disease.recommendations.copy()
-        
-        # Thêm khuyến nghị chung
-        general_recs = [
-            "Kết quả này chỉ mang tính tham khảo, không thay thế chẩn đoán y khoa",
-            "Luôn tham khảo ý kiến bác sĩ da liễu chuyên nghiệp",
+
+        # Phân nhóm đơn giản theo loại bệnh để tùy biến
+        name = disease.name.lower()
+        is_cancer_like = ("carcinoma" in name) or ("melanoma" in name) or ("keratosis" in name)
+        is_infectious_like = any(k in name for k in ["impetigo", "cellulitis", "folliculitis", "tinea"])
+        is_benign_mass = any(k in name for k in ["nevus", "dermatofibroma", "lipoma", "skin tag", "milia", "seborrheic keratosis", "cherry angioma"]) and not is_cancer_like
+
+        # Khuyến nghị theo mức độ nghiêm trọng
+        if disease.severity in [Severity.SEVERE, Severity.CRITICAL]:
+            recommendations.extend([
+                "⏱️ Khi nào cần đi khám NGAY: đau tăng nhanh, chảy máu, loét, sốt, sưng hạch, tổn thương lan rộng",
+                "📞 Nếu không liên hệ được bác sĩ, cân nhắc đến cơ sở y tế gần nhất",
+            ])
+        elif disease.severity == Severity.MODERATE:
+            recommendations.extend([
+                "📅 Nên đặt lịch khám chuyên khoa trong 1–2 tuần để đánh giá chính xác",
+            ])
+        else:
+            recommendations.extend([
+                "👀 Theo dõi định kỳ (mỗi 2–4 tuần) và chụp ảnh cùng góc/ánh sáng để so sánh",
+            ])
+
+        # Khuyến nghị theo nhóm đối tượng (dưới dạng dòng đơn để giữ tương thích)
+        audience_recs = [
+            "👤 Người lớn: ưu tiên sản phẩm dịu nhẹ, tránh tự ý dùng steroid mạnh/kháng sinh đường uống nếu chưa có chỉ định",
+            "🧒 Trẻ em: tránh sản phẩm chứa salicylic/retinoid liều cao; hỏi ý kiến bác sĩ nhi/da liễu trước khi bôi thuốc",
+            "🤰 Phụ nữ mang thai/cho con bú: tránh retinoid (tretinoin, isotretinoin) và tetracycline; dùng kem chống nắng khoáng (zinc/titanium)",
+            "❤️ Người có bệnh nền/ức chế miễn dịch: đi khám sớm hơn; không tự nặn/đốt/laser tại nhà",
         ]
-        
+        recommendations.extend(audience_recs)
+
+        # Chăm sóc tại nhà an toàn (generic)
+        home_care = [
+            "🧴 Chăm sóc tại nhà: vệ sinh nhẹ nhàng, giữ ẩm (không mùi), tránh cào gãi và nắng gắt; dùng SPF 50+ khi ra ngoài",
+        ]
+        recommendations.extend(home_care)
+
+        # Lưu ý theo nhóm bệnh
+        if is_infectious_like:
+            recommendations.extend([
+                "🧼 Bệnh có khả năng lây: không dùng chung khăn/dao cạo; giặt riêng đồ tiếp xúc; vệ sinh tay thường xuyên",
+            ])
+        if is_cancer_like:
+            recommendations.extend([
+                "🧪 Chuẩn bị cho khám: ghi thời điểm bắt đầu, tốc độ thay đổi, yếu tố làm nặng/giảm; mang danh sách thuốc đang dùng",
+            ])
+        if is_benign_mass:
+            recommendations.extend([
+                "💬 Thẩm mỹ: có thể cân nhắc điều trị/loại bỏ tại cơ sở y tế; không tự can thiệp tại nhà",
+            ])
+
+        # Khuyến nghị chung và miễn trừ trách nhiệm
+        general_recs = [
+            "ℹ️ Đây là hệ thống sàng lọc rủi ro, không phải chẩn đoán y khoa",
+            "🩺 Quyết định điều trị cần dựa trên tư vấn trực tiếp của bác sĩ da liễu",
+        ]
         recommendations.extend(general_recs)
         return recommendations
     

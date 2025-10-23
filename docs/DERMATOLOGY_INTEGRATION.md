@@ -383,43 +383,25 @@ def decide_risk(cv_scores: Dict[str, float],
 
 ## 🧪 Testing
 
-### Unit Tests
+### Quick API smoke tests
 
-**ai-service/tests/** - 6 tests:
+AI Service health
 ```bash
-cd ai-service
-pytest -v
-
-# Output:
-# test_health.py::test_health_check PASSED
-# test_analyze.py::test_analyze_endpoint PASSED
-# test_analyze.py::test_analyze_with_symptoms PASSED
-# test_analyze_json.py::test_analyze_json PASSED
-# test_rules.py::test_decide_risk_high PASSED
-# test_rules.py::test_decide_risk_low PASSED
+curl http://localhost:8001/health
 ```
 
-**backend-api/tests/** - 2 tests:
+Analyze (direct to AI Service)
 ```bash
-cd backend-api
-pytest -v
-
-# Output:
-# test_health.py::test_health_check PASSED
-# test_analyze.py::test_analyze_endpoint PASSED
+curl -X POST http://localhost:8001/analyze \
+    -F "image=@path/to/skin.jpg"
 ```
 
-### Integration Test
-
-**test_dermatology_integration.py** (root):
+Backend API analyze (recommended)
 ```bash
-python test_dermatology_integration.py
-
-# Expected output:
-# ✅ DermatologyAnalyzer imported successfully
-# ✅ Analyzer initialized
-# ✅ Analysis completed
-# 📊 Results: {...}
+curl -X POST http://localhost:8000/api/v1/analyze \
+    -F "image=@path/to/skin.jpg" \
+    -F "symptoms_selected=ngứa,đỏ" \
+    -F "duration=1-2 tuần"
 ```
 
 ---
@@ -491,7 +473,7 @@ npm run dev
 ### Option 2: Docker
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 ### Option 3: Quick Start Script

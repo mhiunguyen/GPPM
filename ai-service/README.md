@@ -33,7 +33,7 @@ Client → Backend API → AI Service → DermatologyAnalyzer → DermLIP Model
 pip install -r requirements.txt
 
 # 2. Chạy service
-uvicorn app.main:app --reload --port 8001
+uvicorn ai_app.main:app --host 0.0.0.0 --port 8001 --reload
 
 # 3. Truy cập API docs
 open http://localhost:8001/docs
@@ -43,10 +43,10 @@ open http://localhost:8001/docs
 
 ```bash
 # Build và chạy
-docker-compose up -d --build ai-service
+docker compose up -d --build ai-service
 
 # Xem logs
-docker-compose logs -f ai-service
+docker compose logs -f ai-service
 
 # Kiểm tra health
 curl http://localhost:8001/health
@@ -199,7 +199,7 @@ Model sẽ được cache sau lần đầu:
 
 Kiểm tra logs:
 ```bash
-docker-compose logs ai-service
+docker compose logs ai-service
 ```
 
 ## 📚 Tài liệu
@@ -208,24 +208,19 @@ docker-compose logs ai-service
 - [dermatology_module/README.md](../dermatology_module/README.md) - Module documentation
 - [DermLIP Paper](https://arxiv.org/abs/2503.14911) - Research paper
 
-## 🧪 Testing
+## 🧪 Quick API test
 
 ```bash
-# Unit tests
-pytest tests/
-
-# Integration test
-python ../test_dermatology_integration.py
-
-# API test
 curl -X POST http://localhost:8001/analyze \
   -F "image=@test_image.jpg"
 ```
 
 ## 📝 License
 
-- Code: MIT License
-- DermLIP Model: CC BY-NC 4.0 (Non-commercial use only)
+- Service code: MIT License (see project root `LICENSE`).
+- dermatology_module and DermLIP model weights: CC BY-NC 4.0 (Non-commercial). See project root `THIRD_PARTY_NOTICES.md` and `dermatology_module/LICENSE`.
+
+Note: When using this service with DermLIP weights, your usage is subject to CC BY-NC 4.0 and requires attribution to the model authors (Siyuan Yan, Ming Hu, et al.).
 
 ## 🙏 Credits
 

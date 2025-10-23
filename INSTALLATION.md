@@ -179,8 +179,8 @@ cd backend-api
 
 # Tạo file .env
 cat > .env << 'EOF'
-# Database Configuration
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/derma_db
+# Database Configuration (matches docker-compose.yml)
+DATABASE_URL=postgresql://dermasafe_user:dermasafe_pass@postgres:5432/dermasafe
 
 # API Configuration
 API_HOST=0.0.0.0

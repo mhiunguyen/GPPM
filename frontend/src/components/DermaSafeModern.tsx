@@ -1,4 +1,4 @@
-import type React from 'react';
+import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Upload,
@@ -193,7 +193,7 @@ export default function DermaSafeModern() {
   };
 
   // Handlers
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedImage(file);
@@ -201,7 +201,7 @@ export default function DermaSafeModern() {
     setResult(null);
   };
 
-  const onDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+  const onDrop = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
@@ -221,7 +221,6 @@ export default function DermaSafeModern() {
     setSymptoms(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
-  const removeSymptom = (id: string) => setSymptoms(prev => prev.filter(s => s !== id));
   const addCustomSymptom = async () => {
     const v = customSymptomInput.trim();
     if (!v) return;
@@ -276,7 +275,6 @@ export default function DermaSafeModern() {
       setCustomValidating(false);
     }
   };
-  const removeCustomSymptom = (name: string) => setCustomSymptoms(prev => prev.filter(s => s !== name));
 
   const viMap: Record<string, string> = {
     itching: 'ngứa', pain: 'đau', bleeding: 'chảy máu', swelling: 'sưng', redness: 'đỏ', scaling: 'bong vảy', crusting: 'đóng vảy', warmth: 'nóng rát', discharge: 'tiết dịch',
@@ -325,7 +323,7 @@ export default function DermaSafeModern() {
     return <CheckCircle className="w-6 h-6 text-emerald-600"/>;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedImage) return alert(language === 'vi' ? 'Vui lòng chọn ảnh!' : 'Please select an image!');
     if (!consentAccepted) {
@@ -340,8 +338,8 @@ export default function DermaSafeModern() {
   const allSymptoms = [...viSymptoms, ...customSymptoms];
     const durationLabel = durationMap[duration] || undefined;
 
-    const formData = new FormData();
-    formData.append('image', selectedImage);
+  const formData = new FormData();
+  formData.append('image', selectedImage!);
   formData.append('symptoms_json', JSON.stringify({ symptoms_selected: allSymptoms, duration: durationLabel }));
     formData.append('enhance', 'true');
 
@@ -417,12 +415,14 @@ export default function DermaSafeModern() {
           }))
         : [];
 
+      // Prefer server-provided detailed recommendations when available (array of strings)
+      const serverRecs = Array.isArray(data?.recommendations) ? data.recommendations : null;
       setResult({
         success: true,
         risk_level: riskLevel,
         primary_diagnosis: primaryDiagnosis,
         alternative_diagnoses: alternativeDiagnoses,
-        recommendations: getRiskRecommendations(riskLevel, language),
+        recommendations: serverRecs ?? getRiskRecommendations(riskLevel, language),
         detected_symptoms: viSymptoms,
         detection_status: data?.detection_status,
         detection_message: data?.detection_message
@@ -442,7 +442,10 @@ export default function DermaSafeModern() {
       confidence: result.primary_diagnosis.confidence
     } : undefined,
     alternative_diseases: result.alternative_diagnoses,
-    recommendations: result.recommendations?.steps || [],
+    // Normalize recommendations for chatbot context: array preferred; else steps array; else empty
+    recommendations: Array.isArray(result.recommendations)
+      ? result.recommendations
+      : (result.recommendations?.steps || []),
     description: result.primary_diagnosis?.description,
     risk_level: result.risk_level
   } : null;

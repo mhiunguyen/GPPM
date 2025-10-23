@@ -1,4 +1,4 @@
-# Installation Guide - DermaSafeAI Frontend
+# Installation Guide — DermaSafe AI Frontend
 
 ## Requirements
 - Node.js (v16 or higher)
@@ -51,7 +51,11 @@ The new `DermaSafeAI` component has been integrated into the frontend with the f
 - ✅ Responsive design with Tailwind CSS
 
 ### API Integration:
-The component calls the backend API at `http://localhost:8000/api/analyze` with:
+The app calls the Backend API via a dev proxy at `/api/v1/*` (see `vite.config.ts`). Make sure the backend is running on `http://localhost:8000` or set the environment variable `VITE_BACKEND_URL`.
+
+Primary analyze endpoint: `/api/v1/analyze`
+
+Request payload includes:
 - Image file
 - Selected symptoms
 - Duration
@@ -67,19 +71,15 @@ frontend/src/components/DermaSafeAI.tsx
 2. `frontend/src/components/DermaSafeAI.tsx` - New component
 3. `frontend/package.json` - Added lucide-react dependency
 
+## Environment (optional)
+
+Create a `.env` file to override defaults:
+```
+VITE_BACKEND_URL=http://localhost:8000
+VITE_SUPPORT_PHONE=19001234
+```
+
 ## Troubleshooting
-
-### If PowerShell script execution is disabled:
-Run PowerShell as Administrator and execute:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-### If npm command doesn't work in PowerShell:
-Use Command Prompt (cmd.exe) instead, or:
-```powershell
-& "npm" install
-```
 
 ### If port 5173 is already in use:
 The dev server will automatically try the next available port.
