@@ -79,9 +79,21 @@ export default function ProjectInfoButton({ language = 'vi' }: Props) {
               <Info className="w-5 h-5 text-blue-600" />
               {language === 'vi' ? 'Giới thiệu' : 'Introduction'}
             </h4>
-            <p className="text-gray-700 leading-relaxed">
-              {t('description')}
-            </p>
+            <div className="space-y-3">
+              <p className="text-gray-700 leading-relaxed">
+                {t('description')}
+              </p>
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4">
+                <h5 className="font-semibold text-gray-800 mb-2">
+                  {language === 'vi' ? '🎯 Mục tiêu:' : '🎯 Objectives:'}
+                </h5>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• {language === 'vi' ? 'Sàng lọc nguy cơ bệnh da liễu nhanh chóng, chính xác' : 'Quick and accurate dermatology risk screening'}</li>
+                  <li>• {language === 'vi' ? 'Hỗ trợ người dân tiếp cận chăm sóc sức khỏe da' : 'Support people in accessing skin health care'}</li>
+                  <li>• {language === 'vi' ? 'Giảm tải cho hệ thống y tế qua AI sàng lọc ban đầu' : 'Reduce healthcare burden through AI initial screening'}</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           {/* Technologies */}
@@ -90,26 +102,94 @@ export default function ProjectInfoButton({ language = 'vi' }: Props) {
               <Code className="w-5 h-5 text-blue-600" />
               {t('technologies')}
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            
+            {/* Tech Stack Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
                 <div className="font-semibold text-blue-900">Frontend</div>
-                <div className="text-sm text-gray-700 mt-1">React + TypeScript</div>
-                <div className="text-xs text-gray-500">Vite, Tailwind CSS</div>
+                <div className="text-sm text-gray-700 mt-1">React 19 + TypeScript</div>
+                <div className="text-xs text-gray-500">Vite 5, Tailwind CSS 4</div>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <div className="font-semibold text-green-900">Backend</div>
-                <div className="text-sm text-gray-700 mt-1">FastAPI + Python</div>
-                <div className="text-xs text-gray-500">PostgreSQL</div>
+                <div className="font-semibold text-green-900">Backend API</div>
+                <div className="text-sm text-gray-700 mt-1">FastAPI + Python 3.11</div>
+                <div className="text-xs text-gray-500">PostgreSQL, Alembic</div>
               </div>
               <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200">
                 <div className="font-semibold text-purple-900">AI Service</div>
-                <div className="text-sm text-gray-700 mt-1">Deep Learning</div>
-                <div className="text-xs text-gray-500">PyTorch, OpenCV</div>
+                <div className="text-sm text-gray-700 mt-1">PyTorch + ONNX</div>
+                <div className="text-xs text-gray-500">OpenCV, NumPy</div>
               </div>
               <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200">
                 <div className="font-semibold text-amber-900">Chatbot</div>
-                <div className="text-sm text-gray-700 mt-1">Gemini AI</div>
-                <div className="text-xs text-gray-500">Natural Language</div>
+                <div className="text-sm text-gray-700 mt-1">Google Gemini AI</div>
+                <div className="text-xs text-gray-500">FastAPI, NLP</div>
+              </div>
+            </div>
+
+            {/* AI Model Details */}
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <h5 className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                <span className="text-lg">🧠</span>
+                {language === 'vi' ? 'Mô hình AI:' : 'AI Model:'}
+              </h5>
+              <div className="text-sm text-gray-700 space-y-1.5">
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Tên model:' : 'Model name:'}</span>
+                  <span className="text-right">DermLIP ViT-B-16</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Kiến trúc:' : 'Architecture:'}</span>
+                  <span className="text-right">Vision Transformer (ViT-B/16)</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Phương pháp:' : 'Method:'}</span>
+                  <span className="text-right">CLIP-based Contrastive Learning</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Tham số:' : 'Parameters:'}</span>
+                  <span className="text-right">~86M params</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Tập dữ liệu:' : 'Dataset:'}</span>
+                  <span className="text-right">HAM10000, Fitzpatrick17k</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Số lớp bệnh:' : 'Disease classes:'}</span>
+                  <span className="text-right">23+ {language === 'vi' ? 'bệnh da liễu' : 'skin conditions'}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Input size:' : 'Input size:'}</span>
+                  <span className="text-right">224×224 RGB</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Nguồn:' : 'Source:'}</span>
+                  <span className="text-right text-xs">🤗 HuggingFace (redlessone)</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">{language === 'vi' ? 'Triển khai:' : 'Deployment:'}</span>
+                  <span className="text-right">ONNX Runtime (CPU)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Architecture */}
+            <div className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-4">
+              <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <span className="text-lg">🏗️</span>
+                {language === 'vi' ? 'Cấu trúc hệ thống:' : 'System Architecture:'}
+              </h5>
+              <div className="text-xs font-mono bg-white border border-gray-300 rounded p-3 overflow-x-auto">
+                <div className="text-gray-700 space-y-1">
+                  <div>📱 <span className="text-blue-600">Frontend (React)</span> → HTTP/REST</div>
+                  <div className="ml-4">↓</div>
+                  <div>🔄 <span className="text-green-600">Backend API (FastAPI)</span> → Proxy + Database</div>
+                  <div className="ml-4">↓</div>
+                  <div className="ml-2">├─ <span className="text-purple-600">AI Service</span> → Image Analysis (ViT)</div>
+                  <div className="ml-2">├─ <span className="text-amber-600">Chatbot Service</span> → Gemini AI (NLP)</div>
+                  <div className="ml-2">└─ <span className="text-gray-600">PostgreSQL</span> → Data Storage</div>
+                  <div className="mt-2 text-gray-500">🐳 Docker Compose orchestration</div>
+                </div>
               </div>
             </div>
           </div>
@@ -122,12 +202,30 @@ export default function ProjectInfoButton({ language = 'vi' }: Props) {
             </h4>
             <div className="space-y-2">
               <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white font-bold">
-                  MN
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white font-bold text-sm">
+                  NT
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800">Minh Nguyen</div>
-                  <div className="text-sm text-gray-600">{language === 'vi' ? 'Trưởng dự án' : 'Project Lead'}</div>
+                  <div className="font-semibold text-gray-800">Nguyễn Nhật Thiên</div>
+                  <div className="text-sm text-gray-600">{language === 'vi' ? 'Phát triển viên' : 'Developer'}</div>
+                </div>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-sm">
+                  MH
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">Nguyễn Minh Hiếu</div>
+                  <div className="text-sm text-gray-600">{language === 'vi' ? 'Phát triển viên' : 'Developer'}</div>
+                </div>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+                  NH
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">Nguyễn Thị Nguyên Hằng</div>
+                  <div className="text-sm text-gray-600">{language === 'vi' ? 'Phát triển viên' : 'Developer'}</div>
                 </div>
               </div>
             </div>
@@ -136,30 +234,73 @@ export default function ProjectInfoButton({ language = 'vi' }: Props) {
           {/* Features */}
           <div>
             <h4 className="text-lg font-bold text-gray-800 mb-3">
-              {language === 'vi' ? '✨ Tính năng chính' : '✨ Key Features'}
+              {language === 'vi' ? '✨ Tính năng nổi bật' : '✨ Key Features'}
             </h4>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold mt-1">✓</span>
-                <span>{language === 'vi' ? 'Phân tích hình ảnh da bằng AI' : 'AI-powered skin image analysis'}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold mt-1">✓</span>
-                <span>{language === 'vi' ? 'Nhận diện 23+ bệnh da liễu phổ biến' : 'Recognize 23+ common skin conditions'}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold mt-1">✓</span>
-                <span>{language === 'vi' ? 'Đánh giá mức độ nguy cơ dựa trên triệu chứng' : 'Risk assessment based on symptoms'}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold mt-1">✓</span>
-                <span>{language === 'vi' ? 'Chatbot AI tư vấn và giải đáp' : 'AI chatbot for consultation'}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold mt-1">✓</span>
-                <span>{language === 'vi' ? 'Khuyến nghị chăm sóc và điều trị' : 'Care and treatment recommendations'}</span>
-              </li>
-            </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-start gap-2 bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
+                <span className="text-green-600 font-bold text-lg flex-shrink-0">🔍</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Phân tích AI thông minh' : 'Smart AI Analysis'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Vision Transformer nhận diện 23+ bệnh' : 'Vision Transformer identifies 23+ diseases'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-blue-50 to-cyan-50 p-3 rounded-lg border border-blue-200">
+                <span className="text-blue-600 font-bold text-lg flex-shrink-0">📊</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Đánh giá nguy cơ' : 'Risk Assessment'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Phân tích mức độ HIGH/MEDIUM/LOW' : 'Analyze severity: HIGH/MEDIUM/LOW'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
+                <span className="text-purple-600 font-bold text-lg flex-shrink-0">💬</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Chatbot tư vấn 24/7' : '24/7 Consultation Bot'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Gemini AI giải đáp y tế' : 'Gemini AI medical Q&A'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-amber-50 to-orange-50 p-3 rounded-lg border border-amber-200">
+                <span className="text-amber-600 font-bold text-lg flex-shrink-0">📝</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Khuyến nghị cá nhân hóa' : 'Personalized Advice'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Tự động giải thích kết quả' : 'Auto-explain results'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-pink-50 to-rose-50 p-3 rounded-lg border border-pink-200">
+                <span className="text-pink-600 font-bold text-lg flex-shrink-0">📸</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Chụp ảnh thông minh' : 'Smart Camera Capture'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Tự động crop & xử lý ảnh' : 'Auto crop & image processing'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-indigo-50 to-violet-50 p-3 rounded-lg border border-indigo-200">
+                <span className="text-indigo-600 font-bold text-lg flex-shrink-0">🎯</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Xác thực triệu chứng AI' : 'AI Symptom Validation'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Kiểm tra triệu chứng tùy chỉnh' : 'Validate custom symptoms'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-teal-50 to-cyan-50 p-3 rounded-lg border border-teal-200">
+                <span className="text-teal-600 font-bold text-lg flex-shrink-0">🌍</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Đa ngôn ngữ' : 'Multi-language'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Tiếng Việt & English' : 'Vietnamese & English'}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2 bg-gradient-to-br from-lime-50 to-green-50 p-3 rounded-lg border border-lime-200">
+                <span className="text-lime-600 font-bold text-lg flex-shrink-0">📱</span>
+                <div>
+                  <div className="font-semibold text-gray-800 text-sm">{language === 'vi' ? 'Responsive Design' : 'Responsive Design'}</div>
+                  <div className="text-xs text-gray-600">{language === 'vi' ? 'Mobile-first, mượt mọi thiết bị' : 'Mobile-first, smooth on all devices'}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Disclaimer */}
@@ -192,7 +333,7 @@ export default function ProjectInfoButton({ language = 'vi' }: Props) {
           <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
             {language === 'vi' ? 'Được xây dựng với' : 'Made with'}{' '}
             <Heart className="w-4 h-4 inline text-red-500 fill-red-500 animate-pulse" />{' '}
-            {language === 'vi' ? 'tại Việt Nam' : 'in Vietnam'}
+            {language === 'vi' ? 'tại Việt Nam' : 'in Vietnam'} 🇻🇳
           </div>
         </div>
       </div>

@@ -22,6 +22,3 @@ python-dotenv==1.0.1
 # Security & Authentication (optional for future)
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-
-# CORS
-python-cors==1.0.0

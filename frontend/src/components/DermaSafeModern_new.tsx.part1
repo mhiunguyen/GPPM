@@ -1,0 +1,66 @@
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Image as ImageIcon,
+  Upload,
+  Camera,
+  Search,
+  X,
+  ChevronDown,
+  AlertCircle,
+  Info,
+  CheckCircle,
+  FileText,
+  Shield,
+  Clock,
+  Activity,
+  MessageCircle,
+  BarChart3,
+  BookOpen
+} from 'lucide-react';
+import CameraCapture from './CameraCapture';
+import ChatBot from './ChatBot';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import FloatCallButton from './FloatCallButton';
+import BugReportButton from './BugReportButton';
+import ProjectInfoButton from './ProjectInfoButton';
+
+type LangKey = 'vi' | 'en';
+type Symptom = { id: string; vi: string; en: string };
+type SymptomCategory = { id: string; title: { vi: string; en: string }; symptoms: Symptom[] };
+type RiskLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export default function DermaSafeModern() {
+  const [language, setLanguage] = useState<LangKey>('vi');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [symptoms, setSymptoms] = useState<string[]>([]);
+  const [customSymptoms, setCustomSymptoms] = useState<string[]>([]);
+  const [customSymptomInput, setCustomSymptomInput] = useState('');
+  const [customValidating, setCustomValidating] = useState(false);
+  const [customValidationMsg, setCustomValidationMsg] = useState<string | null>(null);
+  const [duration, setDuration] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ main: true });
+  const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>('upload');
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('dermasafe_consent_v1');
+      if (v === '1') setConsentAccepted(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (result && activeTab === 'upload') {
+      setActiveTab('results');
+    }
+  }, [result]);

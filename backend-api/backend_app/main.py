@@ -1,14 +1,18 @@
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import httpx
 import os
 import json
+import logging
 
 from .database import get_db
 from .models import AnalysisRecord
 from .schemas import AnalyzeResult
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://localhost:8001")
 CHATBOT_SERVICE_URL = os.getenv("CHATBOT_SERVICE_URL", "http://localhost:8002")
@@ -41,18 +45,36 @@ async def analyze(
     db: Session = Depends(get_db),
 ):
     # Proxy the request to AI service
-    async with httpx.AsyncClient(base_url=AI_SERVICE_URL, timeout=30.0) as client:
-        files = {"image": (image.filename, await image.read(), image.content_type or "application/octet-stream")}
-        data = {"enhance": str(enhance).lower()}
-        if symptoms_json is not None:
-            data["symptoms_json"] = symptoms_json
-        if symptoms_selected is not None:
-            data["symptoms_selected"] = symptoms_selected
-        if duration is not None:
-            data["duration"] = duration
-        r = await client.post("/analyze", files=files, data=data)
-        r.raise_for_status()
-        result = r.json()
+    # Proxy the request to AI service with robust error handling
+    try:
+        async with httpx.AsyncClient(base_url=AI_SERVICE_URL, timeout=30.0) as client:
+            files = {"image": (image.filename, await image.read(), image.content_type or "application/octet-stream")}
+            data = {"enhance": str(enhance).lower()}
+            if symptoms_json is not None:
+                data["symptoms_json"] = symptoms_json
+            if symptoms_selected is not None:
+                data["symptoms_selected"] = symptoms_selected
+            if duration is not None:
+                data["duration"] = duration
+            r = await client.post("/analyze", files=files, data=data)
+            r.raise_for_status()
+            result = r.json()
+    except httpx.HTTPStatusError as e:
+        # Upstream returned 4xx/5xx - forward relevant information
+        try:
+            detail = e.response.json()
+        except Exception:
+            detail = e.response.text
+        logger.error(f"AI service returned HTTP error {e.response.status_code}: {detail}")
+        # If upstream 5xx, return 502 Bad Gateway; else return upstream status
+        status_code = 502 if 500 <= e.response.status_code < 600 else e.response.status_code
+        raise HTTPException(status_code=status_code, detail={"ai_service_error": detail})
+    except httpx.RequestError as e:
+        logger.error(f"Error connecting to AI service: {e}")
+        raise HTTPException(status_code=502, detail="Failed to connect to AI service")
+    except Exception as e:
+        logger.exception("Unexpected error while calling AI service")
+        raise HTTPException(status_code=500, detail=str(e))
     
     # Log analysis result (anonymized)
     try:
@@ -98,22 +120,53 @@ async def get_tips():
         return r.json()
 
 
-@app.post("/api/v1/chat", tags=["chatbot"])
+@app.post("/api/v1/chat")
 async def chat(request: dict):
     """
-    Proxy chat requests to chatbot service (Gemini AI)
+    Proxy endpoint for chatbot service
     
-    Request body:
+    Expected request body:
     {
-        "session_id": "unique_session_id",
-        "message": "user message",
-        "analysis_context": { optional analysis data }
+        "session_id": str,
+        "message": str,
+        "analysis_context": Optional[dict]
     }
     """
-    async with httpx.AsyncClient(base_url=CHATBOT_SERVICE_URL, timeout=30.0) as client:
-        r = await client.post("/chat", json=request)
-        r.raise_for_status()
-        return r.json()
+    logger.info(f"💬 Forwarding chat request to chatbot service")
+    
+    # Validate required fields
+    if "session_id" not in request:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    if "message" not in request:
+        raise HTTPException(status_code=400, detail="message is required")
+    
+    # Build chatbot request payload
+    chatbot_request = {
+        "session_id": request["session_id"],
+        "message": request["message"],
+    }
+    
+    # Add analysis_context if provided
+    if "analysis_context" in request and request["analysis_context"]:
+        chatbot_request["analysis_context"] = request["analysis_context"]
+    
+    chatbot_url = CHATBOT_SERVICE_URL + "/chat"
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            logger.info(f"Sending to chatbot: {chatbot_url}")
+            r = await client.post(chatbot_url, json=chatbot_request)
+            r.raise_for_status()
+            return r.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Chatbot service returned error {e.response.status_code}: {e.response.text}")
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Chatbot service error: {e.response.text}"
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Error calling chatbot service: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v1/chat/history/{session_id}", tags=["chatbot"])

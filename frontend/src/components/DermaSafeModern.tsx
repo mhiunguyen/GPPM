@@ -1,31 +1,26 @@
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Image as ImageIcon,
   Upload,
-  Camera,
-  Search,
-  X,
-  ChevronDown,
   AlertCircle,
   Info,
   CheckCircle,
-  FileText,
   Shield,
-  Clock,
-  Activity,
+  BarChart3,
+  BookOpen,
   MessageCircle
 } from 'lucide-react';
 import CameraCapture from './CameraCapture';
-import ChatBot from './ChatBot';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import FloatCallButton from './FloatCallButton';
 import BugReportButton from './BugReportButton';
 import ProjectInfoButton from './ProjectInfoButton';
+import ProjectInfoTab from './tabs/ProjectInfoTab';
+import UploadSymptomsTab from './tabs/UploadSymptomsTab';
+import ResultsTab from './tabs/ResultsTab';
+import ChatBotTab from './tabs/ChatBotTab';
 
+// Types
 // Types
 type LangKey = 'vi' | 'en';
 
@@ -55,6 +50,7 @@ export default function DermaSafeModern() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ main: true });
   const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>('project');
 
   // Load consent from localStorage
   useEffect(() => {
@@ -438,410 +434,129 @@ export default function DermaSafeModern() {
     }
   };
 
-  const selectedChips = (
-    <div className="flex flex-wrap gap-2 justify-center">
-      {symptoms.map(id => {
-        const s = categories.flatMap(c => c.symptoms).find(x => x.id === id);
-        if (!s) return null;
-        return (
-          <Badge key={id} className="gap-2">
-            {s[language]}
-            <button type="button" onClick={() => removeSymptom(id)} className="hover:opacity-80">
-              <X className="w-3.5 h-3.5"/>
-            </button>
-          </Badge>
-        );
-      })}
-      {customSymptoms.map(name => (
-        <Badge key={`c-${name}`} className="gap-2 bg-purple-100 text-purple-800 hover:bg-purple-100">
-          {name}
-          <button type="button" onClick={() => removeCustomSymptom(name)} className="hover:opacity-80">
-            <X className="w-3.5 h-3.5"/>
-          </button>
-        </Badge>
-      ))}
-    </div>
-  );
+  const analysisContext = result ? {
+    risk: result.risk_level || 'UNKNOWN',
+    reason: result.primary_diagnosis?.description || 'Đang phân tích...',
+    primary_disease: result.primary_diagnosis ? {
+      disease: result.primary_diagnosis.disease,
+      confidence: result.primary_diagnosis.confidence
+    } : undefined,
+    alternative_diseases: result.alternative_diagnoses,
+    recommendations: result.recommendations?.steps || [],
+    description: result.primary_diagnosis?.description,
+    risk_level: result.risk_level
+  } : null;
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header - centered */}
-      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-md border-b border-gray-200 shadow-sm animate-fade-in-down">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-center relative">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg">
-              <Shield className="w-7 h-7"/>
+      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg flex-shrink-0">
+                <Shield className="w-6 h-6 sm:w-7 sm:h-7"/>
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">{t('title')}</h1>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">{t('subtitle')}</p>
+              </div>
             </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('title')}</h1>
-              <p className="text-sm text-gray-600">{t('subtitle')}</p>
-            </div>
+            
+            <button onClick={() => setLanguage(prev => prev === 'vi' ? 'en' : 'vi')} className="px-3 py-2 sm:px-4 text-xs sm:text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200 hover:shadow-md whitespace-nowrap flex-shrink-0">
+              <span className="hidden sm:inline">{language === 'vi' ? '🇬🇧 English' : '🇻🇳 Tiếng Việt'}</span>
+              <span className="sm:hidden">{language === 'vi' ? '🇬🇧 EN' : '🇻🇳 VI'}</span>
+            </button>
           </div>
-          <button onClick={() => setLanguage(prev => prev === 'vi' ? 'en' : 'vi')} className="absolute right-6 px-4 py-2 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200 hover:shadow-md">
-            {language === 'vi' ? '🇬🇧 English' : '🇻🇳 Tiếng Việt'}
-          </button>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-6 lg:px-8 py-8 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">{/* Left Column: Upload + Symptoms */}
-          <div className="space-y-6 animate-fade-in-up">
-            {/* Upload Card */}
-            <Card className="smooth-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="w-6 h-6 text-primary"/>
-                  {t('stepUpload')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-input rounded p-6 hover:border-primary transition-colors bg-gradient-to-br from-indigo-50 to-blue-50 mb-4">
-                  {previewUrl ? (
-                    <div className="space-y-3">
-                      <img src={previewUrl} alt="Preview" className="w-full h-64 object-cover rounded shadow-md mb-3"/>
-                      <Button
-                        variant="destructive"
-                        onClick={() => { setSelectedImage(null); setPreviewUrl(null); setResult(null); }}
-                        className="w-full"
-                      >
-                        {language === 'vi' ? '❌ Xóa ảnh' : '❌ Remove Image'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <label
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={onDrop}
-                        className="flex flex-col items-center justify-center cursor-pointer py-8"
-                      >
-                        <Upload className="w-16 h-16 text-muted-foreground mb-3"/>
-                        <p className="text-sm text-muted-foreground text-center mb-4">{t('dragDrop')}</p>
-                        <input type="file" accept="image/*" onChange={onFileChange} className="hidden"/>
-                        <Button size="lg">
-                          📁 {t('selectImage')}
-                        </Button>
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-input"></div></div>
-                        <div className="relative flex justify-center text-sm"><span className="px-3 bg-gradient-to-br from-indigo-50 to-blue-50 text-muted-foreground font-medium">{language === 'vi' ? 'hoặc' : 'or'}</span></div>
-                      </div>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setCameraOpen(true)}
-                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
-                      >
-                        <Camera className="w-5 h-5 mr-2"/> {t('captureImage')}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto sm:h-12 gap-1 sm:gap-0 mb-6">
+            <TabsTrigger value="project" className="flex items-center gap-2 text-xs sm:text-sm py-3 sm:py-2">
+              <BookOpen className="w-4 h-4"/>
+              <span className="hidden sm:inline">{language === 'vi' ? 'Thông tin' : 'Info'}</span>
+              <span className="sm:hidden">{language === 'vi' ? 'TT' : 'Info'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2 text-xs sm:text-sm py-3 sm:py-2">
+              <Upload className="w-4 h-4"/>
+              <span className="hidden sm:inline">{language === 'vi' ? 'Tải ảnh' : 'Upload'}</span>
+              <span className="sm:hidden">{language === 'vi' ? 'Tải' : 'Up'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="results" className="flex items-center gap-2 text-xs sm:text-sm py-3 sm:py-2" disabled={!result}>
+              <BarChart3 className="w-4 h-4"/>
+              <span>{language === 'vi' ? 'Kết quả' : 'Results'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="chatbot" className="flex items-center gap-2 text-xs sm:text-sm py-3 sm:py-2">
+              <MessageCircle className="w-4 h-4"/>
+              <span>{language === 'vi' ? 'Chat' : 'Chat'}</span>
+            </TabsTrigger>
+          </TabsList>
 
-                {/* Duration inline below upload */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-5 h-5 text-primary"/>
-                    <h3 className="text-base font-semibold text-foreground">{t('stepDuration')}</h3>
-                  </div>
-                  <select
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className="w-full p-3 border-2 border-input rounded focus:border-primary focus:outline-none bg-background text-foreground text-sm font-medium"
-                  >
-                    <option value="" disabled>{t('selectDuration')}</option>
-                    {durationOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt[language]}</option>
-                    ))}
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Symptoms Card */}
-            <Card className="mt-4 smooth-hover">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-6 h-6 text-primary"/>
-                    {t('stepSymptoms')}
-                  </CardTitle>
-                  {(symptoms.length > 0 || customSymptoms.length > 0) && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => { setSymptoms([]); setCustomSymptoms([]); }}
-                    >
-                      🗑️ {t('clearAll')}
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Search */}
-                <div className="relative mb-4">
-                  <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={t('searchPlaceholder')}
-                    className="pl-10"
-                  />
-                </div>
-
-                {/* Custom symptom input */}
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    type="text"
-                    value={customSymptomInput}
-                    onChange={(e) => setCustomSymptomInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !customValidating && addCustomSymptom()}
-                    placeholder={language === 'vi' ? '✏️ Nhập triệu chứng khác...' : '✏️ Enter other symptom...'}
-                    className="flex-1 border-purple-300 focus-visible:ring-purple-500"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addCustomSymptom}
-                    disabled={customValidating || !customSymptomInput.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60"
-                  >
-                    {customValidating ? (language === 'vi' ? 'Đang kiểm tra…' : 'Validating…') : (<>➕ {language === 'vi' ? 'Thêm' : 'Add'}</>)}
-                  </Button>
-                </div>
-                {customValidationMsg && (
-                  <div className="mb-4 text-xs font-medium px-3 py-2 rounded border" 
-                       style={{ backgroundColor: customValidationMsg.startsWith('✅') ? '#ecfdf5' : '#fff7ed', color: '#111827', borderColor: customValidationMsg.startsWith('✅') ? '#34d399' : '#f59e0b' }}>
-                    {customValidationMsg}
-                  </div>
-                )}
-
-              {/* Selected chips */}
-              {(symptoms.length > 0 || customSymptoms.length > 0) && (
-                <div className="mb-5 p-4 bg-blue-50 rounded border border-blue-200">
-                  <div className="text-xs font-semibold text-blue-900 mb-2 text-center">
-                    {language === 'vi' ? '✅ Đã chọn' : '✅ Selected'} ({symptoms.length + customSymptoms.length})
-                  </div>
-                  {selectedChips}
-                </div>
-              )}
-
-              {/* Categories */}
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                {filteredCategories.map(cat => {
-                  const isOpen = expanded[cat.id] ?? false;
-                  const selectedCount = cat.symptoms.filter(s => symptoms.includes(s.id)).length;
-                  return (
-                    <div key={cat.id} className="border-2 border-gray-200 rounded bg-white overflow-hidden shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isOpen }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 transition-all"
-                      >
-                        <div className="text-sm font-bold text-gray-900">
-                          {cat.title[language]}
-                          <span className="ml-2 text-xs text-blue-600 font-semibold bg-white px-2 py-1 rounded-full">
-                            {selectedCount}/{cat.symptoms.length}
-                          </span>
-                        </div>
-                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}/>
-                      </button>
-                      {isOpen && (
-                        <div className="p-4 grid grid-cols-1 gap-2 bg-gray-50">
-                          {cat.symptoms.map(s => (
-                            <label key={s.id} className={`flex items-center gap-3 p-3 border-2 rounded text-sm cursor-pointer transition-all ${symptoms.includes(s.id) ? 'bg-blue-100 border-blue-400 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
-                              <input
-                                type="checkbox"
-                                checked={symptoms.includes(s.id)}
-                                onChange={() => toggleSymptom(s.id)}
-                                className="w-5 h-5 text-blue-600 rounded"
-                              />
-                              <span className={symptoms.includes(s.id) ? 'text-blue-900 font-semibold' : 'text-gray-700 font-medium'}>{s[language]}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Analyze button */}
-              {/* Consent checkbox */}
-              <div className="mt-4 p-4 border-2 rounded bg-amber-50 border-amber-300 text-amber-900 text-sm">
-                <div className="text-xs font-bold uppercase tracking-wide mb-2 text-amber-800">
-                  {language === 'vi' ? 'Xác nhận' : 'Consent'}
-                </div>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-1 w-5 h-5"
-                    checked={consentAccepted}
-                    onChange={(e) => {
-                      const v = e.target.checked; setConsentAccepted(v);
-                      try { localStorage.setItem('dermasafe_consent_v1', v ? '1' : '0'); } catch {}
-                    }}
-                  />
-                  <span className="font-medium">{t('consentLabel')}</span>
-                </label>
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={loading || !selectedImage || !consentAccepted}
-                className="mt-6 w-full py-4 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-base hover:from-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg transition-all duration-300 hover:shadow-xl active:scale-95"
-              >
-                {loading ? '⏳ ' + t('analyzing') : '🔍 ' + t('analyzeBtn')}
-              </button>
-              {!consentAccepted && (
-                <div className="mt-2 text-xs text-amber-700">
-                  {t('consentRequired')}
-                </div>
-              )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column: ChatBot + Results */}
-          <div className="space-y-6 animate-slide-in-right">
-            {/* Chat inline panel - always visible */}
-            <div className="bg-white rounded border border-gray-200 shadow-lg overflow-hidden smooth-hover">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 flex items-center gap-3">
-                <MessageCircle className="w-6 h-6 text-blue-600"/>
-                <h3 className="text-lg font-bold text-gray-900">{language === 'vi' ? '💬 Trợ lý AI' : '💬 AI Assistant'}</h3>
-              </div>
-              <div className="p-0">
-                <ChatBot
-                  mode="inline"
-                  analysisContext={result ? {
-                    primary_diagnosis: result.primary_diagnosis?.disease,
-                    confidence: result.primary_diagnosis?.confidence,
-                    risk_level: result.risk_level,
-                    symptoms: [
-                      ...symptoms.map(s => (viMap[s] || s)),
-                      ...customSymptoms
-                    ],
-                    duration: duration ? durationMap[duration] : undefined,
-                    description: result.primary_diagnosis?.description,
-                    recommendations: result.recommendations,
-                    alternative_diagnoses: result.alternative_diagnoses
-                  } : null}
-                  language={language}
-                  className="h-[460px]"
-                />
-              </div>
-            </div>
-
-            {!result ? (
-              <div className="bg-white rounded border border-gray-200 shadow-lg p-10 text-center animate-fade-in">
-                <Shield className="w-20 h-20 text-gray-300 mx-auto mb-4 animate-pulse-once"/>
-                <p className="text-gray-600 text-base font-medium">
-                  {language === 'vi' ? '📋 Tải ảnh, chọn triệu chứng để bắt đầu phân tích' : '📋 Upload image and select symptoms to start'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6 stagger-fade-in">
-                {/* Risk */}
-                <div className={`rounded border-2 ${getRiskColor(result.risk_level)} p-6 shadow-lg animate-scale-in`}>
-                  <div className="flex items-start gap-4 justify-center text-center">
-                    {getRiskIcon(result.risk_level)}
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold mb-1">{t('riskLevel')}</div>
-                      <div className="text-2xl font-bold">
-                        {result.risk_level === 'HIGH' && (language === 'vi' ? '🔴 CAO' : '🔴 HIGH')}
-                        {result.risk_level === 'MEDIUM' && (language === 'vi' ? '🟡 TRUNG BÌNH' : '🟡 MEDIUM')}
-                        {result.risk_level === 'LOW' && (language === 'vi' ? '🟢 THẤP' : '🟢 LOW')}
-                      </div>
-                      {result.detected_symptoms?.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                          {result.detected_symptoms.slice(0,5).map((s: string, i: number) => (
-                            <span key={i} className="text-xs px-3 py-1 bg-white/80 rounded-full border-2 font-semibold">{s}</span>
-                          ))}
-                          {result.detected_symptoms.length > 5 && (
-                            <span className="text-xs px-3 py-1 bg-white/80 rounded-full border-2 font-semibold">+{result.detected_symptoms.length-5}</span>
-                          )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Primary Diagnosis */}
-              <div className="bg-white rounded border border-gray-200 shadow-lg p-5 smooth-hover">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="w-5 h-5 text-blue-600"/>
-                  <h3 className="text-base font-semibold text-gray-800">{t('primaryDiag')}</h3>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-lg font-bold text-blue-700">{result.primary_diagnosis?.disease}</div>
-                  {result.primary_diagnosis?.description && (
-                    <p className="text-sm text-gray-600">{result.primary_diagnosis.description}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-600">{t('confidence')}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600" style={{ width: `${(result.primary_diagnosis?.confidence || 0)*100}%` }} />
-                      </div>
-                      <span className="text-sm font-semibold text-blue-700">{Math.round((result.primary_diagnosis?.confidence||0)*100)}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Alternatives */}
-              {result.alternative_diagnoses?.length > 0 && (
-                <div className="bg-white rounded border border-gray-200 shadow-lg p-5 smooth-hover">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Info className="w-5 h-5 text-gray-700"/>
-                    <h3 className="text-base font-semibold text-gray-800">{t('altDiag')}</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {result.alternative_diagnoses.map((diag: any, idx: number) => (
-                      <div key={idx} className="p-3 rounded-lg border border-gray-200">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-semibold text-gray-800">{diag.disease}</div>
-                            {diag.description && (
-                              <div className="text-xs text-gray-600 mt-1">{diag.description}</div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-gray-700" style={{ width: `${Math.round((diag.confidence||0)*100)}%` }} />
-                            </div>
-                            <span className="text-xs font-semibold text-gray-700">{Math.round((diag.confidence||0)*100)}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          </div>
-        </div>
+          <TabsContent value="project"><ProjectInfoTab language={language} /></TabsContent>
+          
+          <TabsContent value="upload">
+            <UploadSymptomsTab
+              language={language}
+              previewUrl={previewUrl}
+              onFileChange={onFileChange}
+              onDrop={onDrop}
+              onCameraClick={() => setCameraOpen(true)}
+              onRemoveImage={() => { setSelectedImage(null); setPreviewUrl(null); setResult(null); }}
+              duration={duration}
+              onDurationChange={setDuration}
+              symptoms={symptoms}
+              customSymptoms={customSymptoms}
+              onToggleSymptom={toggleSymptom}
+              onRemoveSymptom={(id) => setSymptoms(prev => prev.filter(s => s !== id))}
+              customSymptomInput={customSymptomInput}
+              onCustomSymptomInputChange={setCustomSymptomInput}
+              customValidating={customValidating}
+              customValidationMsg={customValidationMsg}
+              onAddCustomSymptom={addCustomSymptom}
+              onRemoveCustomSymptom={(name) => setCustomSymptoms(prev => prev.filter(s => s !== name))}
+              search={search}
+              onSearchChange={setSearch}
+              expanded={expanded}
+              onToggleExpand={(id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))}
+              categories={categories}
+              filteredCategories={filteredCategories}
+              consentAccepted={consentAccepted}
+              onConsentChange={(v) => { setConsentAccepted(v); try { localStorage.setItem('dermasafe_consent_v1', v ? '1' : '0'); } catch {} }}
+              onSubmit={handleSubmit}
+              loading={loading}
+              selectedImage={selectedImage}
+              t={t}
+              durationOptions={durationOptions}
+            />
+          </TabsContent>
+          
+          <TabsContent value="results">
+            <ResultsTab language={language} result={result} t={t} getRiskColor={getRiskColor} getRiskIcon={getRiskIcon} />
+          </TabsContent>
+          
+          <TabsContent value="chatbot">
+            <ChatBotTab language={language} analysisContext={analysisContext} />
+          </TabsContent>
+        </Tabs>
       </main>
 
-      {/* Camera Modal */}
       <CameraCapture isOpen={cameraOpen} onCapture={handleCameraCapture} onClose={() => setCameraOpen(false)} />
 
-  {/* Disclaimer */}
-      <footer className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-gradient-to-r from-red-50 to-amber-50 border-2 border-red-300 rounded p-6 shadow-lg">
-          <div className="flex items-start gap-4 justify-center text-center">
-            <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0"/>
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="bg-gradient-to-r from-red-50 to-amber-50 border-2 border-red-300 rounded p-4 sm:p-6 shadow-lg">
+          <div className="flex items-start gap-3 sm:gap-4 justify-center text-center">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 flex-shrink-0"/>
             <div className="flex-1">
-              <div className="text-lg font-bold text-red-900 mb-2">{language === 'vi' ? '⚠️ CẢNH BÁO QUAN TRỌNG' : '⚠️ IMPORTANT WARNING'}</div>
-              <p className="text-sm text-red-800 font-medium">
-                {language === 'vi'
-                  ? 'DermaSafe-AI KHÔNG phải là công cụ chẩn đoán y khoa. Đây chỉ là công cụ sàng lọc rủi ro để hỗ trợ quyết định đi khám. Kết quả của AI không thay thế bác sĩ da liễu.'
-                  : 'DermaSafe-AI is not a medical diagnostic tool. It is a risk screening tool to help decide whether to see a doctor. AI results do not replace a dermatologist.'}
+              <div className="text-base sm:text-lg font-bold text-red-900 mb-2">{language === 'vi' ? '⚠️ CẢNH BÁO QUAN TRỌNG' : '⚠️ IMPORTANT WARNING'}</div>
+              <p className="text-xs sm:text-sm text-red-800 font-medium">
+                {language === 'vi' ? 'DermaSafe-AI KHÔNG phải là công cụ chẩn đoán y khoa. Đây chỉ là công cụ sàng lọc rủi ro để hỗ trợ quyết định đi khám. Kết quả của AI không thay thế bác sĩ da liễu.' : 'DermaSafe-AI is not a medical diagnostic tool. It is a risk screening tool to help decide whether to see a doctor. AI results do not replace a dermatologist.'}
               </p>
             </div>
           </div>
         </div>
       </footer>
 
-      {/* Floating Buttons */}
       <FloatCallButton language={language} />
       <BugReportButton language={language} />
       <ProjectInfoButton language={language} />

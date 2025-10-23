@@ -32,10 +32,13 @@ export default function ChatBot({ analysisContext, language = 'vi', mode = 'floa
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasAutoExplained, setHasAutoExplained] = useState(false);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = () => {
-    // Only scroll if messages exist to avoid initial page scroll
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll only within the messages container, not the whole page
+    if (messagesContainerRef.current && messages.length > 0) {
+      const container = messagesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
     }
   };
 
@@ -284,7 +287,7 @@ export default function ChatBot({ analysisContext, language = 'vi', mode = 'floa
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
         {messages.map((msg, idx) => (
           <div
             key={idx}

@@ -77,7 +77,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      # When frontend runs inside Docker, use the backend service hostname
+      - VITE_BACKEND_URL=http://backend-api:8000
     depends_on:
       - backend-api
     # Use image-baked sources and node_modules to avoid missing dependencies during dev server startup
