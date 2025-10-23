@@ -1,4 +1,4 @@
-# 🏥 DermaSafe AI - Hệ thống Sàng lọc Rủi ro Da liễu# 🏥 GPPM - General Practice Prediction Model# DermaSafe-AI
+# 🏥 DermaSafe AI - Hệ thống Sàng lọc Rủi ro Da liễu# 🏥 GPPM
 
 
 
